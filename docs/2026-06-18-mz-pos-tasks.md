@@ -13,13 +13,13 @@ Legenda: `[BE]` backend Go · `[FE]` frontend React · `[DB]` skema database · 
 
 ## FASE 1 — MVP (1 toko)
 
-### M1.0 — Fondasi Proyek
-- [ ] `[INFRA]` Inisialisasi repo + struktur folder (frontend/, backend/)
-- [ ] `[INFRA]` Setup Go module, framework REST (Fiber), config env
-- [ ] `[INFRA]` Setup React + Vite + struktur folder
-- [ ] `[INFRA]` Setup PostgreSQL lokal + tool migrasi (golang-migrate)
-- [ ] `[INFRA]` Setup linter, formatter, pre-commit, CI dasar
-- [ ] `[DB]` Skema awal: tabel `users`, `stores` (single store default)
+### M1.0 — Fondasi Proyek ✅
+- [x] `[INFRA]` Inisialisasi repo + struktur folder (frontend/, backend/)
+- [x] `[INFRA]` Setup Go module, framework REST (Fiber), config env
+- [x] `[INFRA]` Setup React + Vite + struktur folder
+- [x] `[INFRA]` Setup PostgreSQL lokal + tool migrasi (golang-migrate)
+- [x] `[INFRA]` Setup linter, formatter, CI dasar _(pre-commit hook belum dipasang)_
+- [x] `[DB]` Skema awal: tabel `users`, `stores` (single store default)
 
 ### M1.1 — Autentikasi & Role
 - [ ] `[DB]` Tabel `users` (email, password_hash, role, store_id)
