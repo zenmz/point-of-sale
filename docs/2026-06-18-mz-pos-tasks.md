@@ -21,14 +21,14 @@ Legenda: `[BE]` backend Go · `[FE]` frontend React · `[DB]` skema database · 
 - [x] `[INFRA]` Setup linter, formatter, CI dasar _(pre-commit hook belum dipasang)_
 - [x] `[DB]` Skema awal: tabel `users`, `stores` (single store default)
 
-### M1.1 — Autentikasi & Role
-- [ ] `[DB]` Tabel `users` (email, password_hash, role, store_id)
-- [ ] `[BE]` Endpoint register (admin pertama) + hash password (argon2/bcrypt)
-- [ ] `[BE]` Endpoint login → JWT
-- [ ] `[BE]` Middleware verifikasi JWT + cek role
-- [ ] `[FE]` Halaman login + simpan token
-- [ ] `[FE]` Route guard berdasar role (Admin/Kasir)
-- [ ] `[FE]` Logout
+### M1.1 — Autentikasi & Role ✅
+- [x] `[DB]` Tabel `users` (email, password_hash, role, store_id)
+- [x] `[BE]` Endpoint register (admin pertama) + hash password (argon2id)
+- [x] `[BE]` Endpoint login → JWT
+- [x] `[BE]` Middleware verifikasi JWT + cek role
+- [x] `[FE]` Halaman login + simpan token
+- [x] `[FE]` Route guard berdasar role (Admin/Kasir)
+- [x] `[FE]` Logout
 
 ### M1.2 — Manajemen Produk
 - [ ] `[DB]` Tabel `categories`, `products`, `variants`

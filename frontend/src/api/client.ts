@@ -3,6 +3,17 @@
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8080";
 
+const TOKEN_KEY = "mzpos_token";
+
+export function getToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
+export function setToken(token: string | null) {
+  if (token) localStorage.setItem(TOKEN_KEY, token);
+  else localStorage.removeItem(TOKEN_KEY);
+}
+
 export class ApiError extends Error {
   status: number;
   constructor(status: number, message: string) {
@@ -17,10 +28,12 @@ type Options = Omit<RequestInit, "body"> & { body?: unknown };
 export async function apiFetch<T>(path: string, options: Options = {}): Promise<T> {
   const { body, headers, ...rest } = options;
 
+  const token = getToken();
   const res = await fetch(`${BASE_URL}${path}`, {
     ...rest,
     headers: {
       "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...headers,
     },
     body: body !== undefined ? JSON.stringify(body) : undefined,

@@ -7,6 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/mzpos/backend/internal/auth"
 	"github.com/mzpos/backend/internal/config"
 )
 
@@ -48,8 +49,21 @@ func (s *Server) registerRoutes() {
 		})
 	})
 
-	// Prefix versi API untuk endpoint mendatang.
-	_ = s.App.Group("/api/v1")
+	api := s.App.Group("/api/v1")
+
+	tokens := auth.NewTokenManager(s.cfg.JWTSecret, s.cfg.JWTExpiryHours)
+	authRepo := auth.NewRepository(s.db)
+	authHandler := auth.NewHandler(authRepo, tokens)
+	authHandler.Register(api)
+
+	// Endpoint contoh terproteksi: kembalikan identitas dari token.
+	api.Get("/me", auth.RequireAuth(tokens), func(c *fiber.Ctx) error {
+		return c.JSON(fiber.Map{
+			"user_id":  auth.UserID(c),
+			"store_id": auth.StoreID(c),
+			"role":     auth.Role(c),
+		})
+	})
 }
 
 // errorHandler menyeragamkan format respons error.
