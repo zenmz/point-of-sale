@@ -15,7 +15,7 @@ Legenda: `[BE]` backend Go · `[FE]` frontend React · `[DB]` skema database · 
 
 ### M1.0 — Fondasi Proyek
 - [ ] `[INFRA]` Inisialisasi repo + struktur folder (frontend/, backend/)
-- [ ] `[INFRA]` Setup Go module, framework REST (chi/gin), config env
+- [ ] `[INFRA]` Setup Go module, framework REST (Fiber), config env
 - [ ] `[INFRA]` Setup React + Vite + struktur folder
 - [ ] `[INFRA]` Setup PostgreSQL lokal + tool migrasi (golang-migrate)
 - [ ] `[INFRA]` Setup linter, formatter, pre-commit, CI dasar

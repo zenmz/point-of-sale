@@ -106,7 +106,7 @@ Tujuan: bisa jualan end-to-end di satu toko.
 | Layer | Teknologi |
 |-------|-----------|
 | Frontend | React + Vite, PWA (service worker), IndexedDB via Dexie |
-| Backend | Go (REST API — chi / gin), PostgreSQL |
+| Backend | Go (REST API — Fiber), PostgreSQL |
 | Auth | JWT, role-based access control |
 
 ### 5.2 Entitas Data Inti
