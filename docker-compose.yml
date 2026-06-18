@@ -1,0 +1,21 @@
+services:
+  db:
+    image: postgres:18-alpine
+    container_name: mzpos-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: mzpos
+      POSTGRES_PASSWORD: mzpos
+      POSTGRES_DB: mzpos
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mzpos"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
