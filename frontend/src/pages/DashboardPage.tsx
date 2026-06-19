@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 
 export function DashboardPage() {
@@ -15,8 +16,15 @@ export function DashboardPage() {
       <p>
         Selamat datang, <strong>{user?.name}</strong> ({user?.role}).
       </p>
-      <p style={{ color: "#666" }}>
-        Dashboard akan diisi fitur kasir & admin pada milestone berikut.
+
+      <nav style={{ display: "flex", gap: 12, marginTop: 16 }}>
+        <Link to="/products" style={navCard}>
+          📦 Produk
+        </Link>
+      </nav>
+
+      <p style={{ color: "#666", marginTop: 24 }}>
+        Menu lain (transaksi, stok, laporan) menyusul pada milestone berikut.
       </p>
     </main>
   );
@@ -29,4 +37,14 @@ const logoutBtn: React.CSSProperties = {
   border: "none",
   borderRadius: 8,
   cursor: "pointer",
+};
+
+const navCard: React.CSSProperties = {
+  display: "block",
+  padding: "16px 24px",
+  background: "#f1f5f9",
+  borderRadius: 10,
+  textDecoration: "none",
+  color: "#1e293b",
+  fontWeight: 500,
 };

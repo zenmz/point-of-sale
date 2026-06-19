@@ -30,14 +30,18 @@ Legenda: `[BE]` backend Go · `[FE]` frontend React · `[DB]` skema database · 
 - [x] `[FE]` Route guard berdasar role (Admin/Kasir)
 - [x] `[FE]` Logout
 
-### M1.2 — Manajemen Produk
-- [ ] `[DB]` Tabel `categories`, `products`, `variants`
-- [ ] `[BE]` CRUD kategori
-- [ ] `[BE]` CRUD produk (sku, barcode, harga)
-- [ ] `[BE]` CRUD varian produk
-- [ ] `[FE]` Halaman daftar produk + search
-- [ ] `[FE]` Form tambah/edit produk + kategori + varian
-- [ ] `[FE]` Hapus produk (konfirmasi)
+### M1.2 — Manajemen Produk ✅
+- [x] `[DB]` Tabel `categories`, `products`, `variants`
+- [x] `[BE]` CRUD kategori
+- [x] `[BE]` CRUD produk (sku, barcode, harga)
+- [x] `[BE]` CRUD varian produk
+- [x] `[FE]` Halaman daftar produk + search
+- [x] `[FE]` Form tambah/edit produk + kategori + varian
+- [x] `[FE]` Hapus produk (konfirmasi)
+
+> Catatan: UI kategori (CRUD) belum dibuat — kategori dipilih di form produk via
+> dropdown, tapi penambahan kategori baru lewat UI belum ada (endpoint backend
+> siap). Hapus produk = soft-delete. Varian count di list via subquery.
 
 ### M1.3 — Stok Dasar
 - [ ] `[DB]` Tabel `inventory` (stok per produk), `stock_movements`

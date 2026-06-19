@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/mzpos/backend/internal/auth"
+	"github.com/mzpos/backend/internal/catalog"
 	"github.com/mzpos/backend/internal/config"
 )
 
@@ -64,6 +65,8 @@ func (s *Server) registerRoutes() {
 			"role":     auth.Role(c),
 		})
 	})
+
+	catalog.NewHandler(catalog.NewRepository(s.db), tokens).Register(api)
 }
 
 // errorHandler menyeragamkan format respons error.
