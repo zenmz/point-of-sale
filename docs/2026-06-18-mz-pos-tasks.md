@@ -102,12 +102,18 @@ Legenda: `[BE]` backend Go · `[FE]` frontend React · `[DB]` skema database · 
 > dari dialog cetak), dan Bagikan (Web Share / salin tautan). Export **gambar**
 > ditunda (perlu html2canvas) — link + PDF sudah cukup untuk MVP.
 
-### M1.7 — Shift Kasir
-- [ ] `[DB]` Tabel `shifts` (user, kas_awal, kas_akhir, waktu)
-- [ ] `[BE]` Endpoint buka shift (kas awal)
-- [ ] `[BE]` Endpoint tutup shift + rekap (total tunai, non-tunai, jumlah transaksi)
-- [ ] `[FE]` Modal buka shift saat mulai
-- [ ] `[FE]` Layar tutup shift + ringkasan rekap
+### M1.7 — Shift Kasir ✅
+- [x] `[DB]` Tabel `shifts` (user, kas_awal, kas_akhir, waktu)
+- [x] `[BE]` Endpoint buka shift (kas awal)
+- [x] `[BE]` Endpoint tutup shift + rekap (total tunai, non-tunai, jumlah transaksi)
+- [x] `[FE]` Modal buka shift saat mulai
+- [x] `[FE]` Layar tutup shift + ringkasan rekap
+
+> Catatan: rekap dihitung on-the-fly dari transaksi 'selesai' milik kasir pada
+> rentang waktu shift (tanpa kolom shift_id di transaksi). Tunai bersih = amount −
+> kembalian. Satu shift terbuka per kasir (unique index parsial). Endpoint:
+> GET /shifts/current (204 bila tak ada), POST /shifts/open, /shifts/close.
+> Chip shift di topbar jadi tombol buka/tutup; tutup tampilkan rekap + selisih.
 
 ### M1.8 — Laporan Dasar
 - [ ] `[BE]` Endpoint laporan penjualan harian

@@ -1,0 +1,2 @@
+DROP TABLE IF EXISTS shifts;
+DROP TYPE IF EXISTS shift_status;

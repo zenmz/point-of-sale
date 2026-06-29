@@ -404,6 +404,21 @@ select.input {
   flex-direction: column;
   gap: 0.9rem;
 }
+.modal-sm {
+  width: 400px;
+}
+
+/* Chip shift (klikable) di topbar */
+.shift-chip {
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+.shift-chip:hover {
+  filter: brightness(0.96);
+}
 
 /* ===================== Stat / Dashboard ===================== */
 .stat-grid {
