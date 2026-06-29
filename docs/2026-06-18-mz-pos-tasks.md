@@ -62,15 +62,21 @@ Legenda: `[BE]` backend Go · `[FE]` frontend React · `[DB]` skema database · 
 > transaksional (kunci baris + upsert + catat movement). Tiga jenis gerakan:
 > masuk/keluar/penyesuaian (set absolut). Ambang "menipis" = 5 (tetap, di FE).
 
-### M1.4 — Keranjang & Checkout
-- [ ] `[FE]` UI kasir: cari/scan produk → tambah ke keranjang
-- [ ] `[FE]` Ubah qty, hapus item dari keranjang
-- [ ] `[FE]` Diskon per item & per nota
-- [ ] `[FE]` Hitung pajak / service charge (konfigurable)
-- [ ] `[FE]` Tampilkan subtotal, diskon, pajak, total
-- [ ] `[DB]` Tabel `transactions`, `transaction_items`
-- [ ] `[BE]` Endpoint buat transaksi → kurangi stok (transaksional)
-- [ ] `[BE]` Validasi stok cukup saat checkout
+### M1.4 — Keranjang & Checkout ✅
+- [x] `[FE]` UI kasir: cari/scan produk → tambah ke keranjang
+- [x] `[FE]` Ubah qty, hapus item dari keranjang
+- [x] `[FE]` Diskon per item & per nota
+- [x] `[FE]` Hitung pajak / service charge (konfigurable)
+- [x] `[FE]` Tampilkan subtotal, diskon, pajak, total
+- [x] `[DB]` Tabel `transactions`, `transaction_items`
+- [x] `[BE]` Endpoint buat transaksi → kurangi stok (transaksional)
+- [x] `[BE]` Validasi stok cukup saat checkout
+
+> Catatan: total dihitung ulang otoritatif di server (klien tak bisa
+> manipulasi). Checkout transaksional: kunci stok (FOR UPDATE) + advisory lock
+> per toko untuk penomoran nota, kurangi stok + catat `stock_movement` 'keluar'.
+> Nama & harga item di-snapshot. Pajak/service % konfigurable di UI kasir
+> (default 0). Pembayaran & struk = M1.5/M1.6. `client_id` (offline) = M2.1.
 
 ### M1.5 — Pembayaran
 - [ ] `[DB]` Tabel `payments` (method, amount)

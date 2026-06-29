@@ -42,12 +42,12 @@ export function DashboardPage() {
             </span>
             Produk
           </Link>
-          <span className="quick soon">
+          <Link to="/kasir" className="quick">
             <span className="quick-ico">
               <IconCart />
             </span>
             Mulai jualan
-          </span>
+          </Link>
           <Link to="/stok" className="quick">
             <span className="quick-ico">
               <IconLayers />

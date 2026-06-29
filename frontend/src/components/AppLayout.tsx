@@ -15,7 +15,7 @@ interface NavConf {
 // Menu mengikuti roadmap milestone; yang belum dibangun ditandai "segera".
 const NAV: NavConf[] = [
   { to: "/", label: "Ringkasan", icon: IconHome },
-  { to: "/kasir", label: "Kasir", icon: IconCart, soon: true },
+  { to: "/kasir", label: "Kasir", icon: IconCart },
   { to: "/products", label: "Produk", icon: IconBox },
   { to: "/stok", label: "Stok", icon: IconLayers },
   { to: "/laporan", label: "Laporan", icon: IconChart, soon: true },
