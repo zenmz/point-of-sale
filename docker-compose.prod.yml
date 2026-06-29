@@ -1,0 +1,64 @@
+# Stack staging/produksi: db + migrasi + backend + frontend (nginx).
+# Jalankan: docker compose -f docker-compose.prod.yml up -d --build
+# Akses: http://localhost:8080
+services:
+  db:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: mzpos
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-mzpos}
+      POSTGRES_DB: mzpos
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mzpos"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  migrate:
+    image: migrate/migrate:v4.17.1
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - ./backend/migrations:/migrations:ro
+    command:
+      [
+        "-path",
+        "/migrations",
+        "-database",
+        "postgres://mzpos:${DB_PASSWORD:-mzpos}@db:5432/mzpos?sslmode=disable",
+        "up",
+      ]
+    restart: "no"
+
+  backend:
+    build: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      APP_PORT: "8080"
+      APP_ENV: production
+      DATABASE_URL: postgres://mzpos:${DB_PASSWORD:-mzpos}@db:5432/mzpos?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      JWT_EXPIRY_HOURS: "24"
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: ""
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+
+volumes:
+  pgdata:

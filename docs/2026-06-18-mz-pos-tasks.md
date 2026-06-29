@@ -127,11 +127,19 @@ Legenda: `[BE]` backend Go · `[FE]` frontend React · `[DB]` skema database · 
 > Hanya transaksi 'selesai'. Metode bayar pakai nilai bersih (amount − kembalian).
 > Nav "Laporan" & quick link dashboard di-gate per role.
 
-### M1.9 — Rilis MVP
-- [ ] `[INFRA]` Setup PWA manifest + service worker dasar (installable)
-- [ ] `[INFRA]` Build & deploy backend + frontend (staging)
-- [ ] `[ ]` Uji end-to-end alur jual → bayar → struk → laporan
-- [ ] `[ ]` Dokumentasi penggunaan singkat
+### M1.9 — Rilis MVP ✅
+- [x] `[INFRA]` Setup PWA manifest + service worker dasar (installable)
+- [x] `[INFRA]` Build & deploy backend + frontend (staging)
+- [x] `[ ]` Uji end-to-end alur jual → bayar → struk → laporan
+- [x] `[ ]` Dokumentasi penggunaan singkat
+
+> Catatan: PWA = manifest.webmanifest + icon 192/512 (generator
+> `scripts/gen-icons.mjs`) + service worker dasar (`public/sw.js`, cache shell,
+> registrasi di produksi). Deploy: Dockerfile backend/frontend + nginx (proxy
+> /api) + `docker-compose.prod.yml` (db + migrate + backend + frontend) —
+> image backend ter-build & migrasi jalan saat verifikasi. **Uji E2E live**
+> lulus (jual→bayar→struk→laporan, lihat tabel di Panduan). Dokumentasi:
+> [Panduan Penggunaan](./2026-06-29-mz-pos-panduan.md). **Fase 1 (MVP) selesai.**
 
 ---
 
