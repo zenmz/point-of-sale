@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useState, type CSSProperties } from "react";
-import { Link } from "react-router-dom";
+import { useCallback, useEffect, useState } from "react";
 import * as catalogApi from "../../api/catalog";
 import { useAuth } from "../../hooks/useAuth";
 import { formatRupiah } from "../../lib/format";
+import { IconPlus } from "../../components/icons";
 import type { Category, Product } from "../../types/catalog";
 import { ProductForm } from "./ProductForm";
 
@@ -58,67 +58,82 @@ export function ProductsPage() {
   }
 
   return (
-    <main style={{ fontFamily: "system-ui", padding: "2rem", maxWidth: 980, margin: "0 auto" }}>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+    <div>
+      <div className="page-head">
         <div>
-          <Link to="/" style={{ fontSize: 14, color: "#2563eb" }}>
-            ← Dashboard
-          </Link>
-          <h1 style={{ margin: "4px 0" }}>Produk</h1>
+          <h1>Produk</h1>
+          <p className="muted" style={{ marginTop: 4 }}>
+            {products.length} produk aktif
+          </p>
         </div>
         {canEdit && (
-          <button onClick={openAdd} style={primaryBtn}>
-            + Tambah Produk
+          <button onClick={openAdd} className="btn btn-primary">
+            <IconPlus size={18} />
+            Tambah Produk
           </button>
         )}
-      </header>
+      </div>
 
-      <input
-        placeholder="Cari nama, SKU, atau barcode…"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        style={searchInput}
-      />
+      <div className="card" style={{ padding: 0 }}>
+        <div style={{ padding: "1rem" }}>
+          <input
+            className="input"
+            placeholder="Cari nama, SKU, atau barcode…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
 
-      {loading ? (
-        <p>Memuat…</p>
-      ) : products.length === 0 ? (
-        <p style={{ color: "#666" }}>Belum ada produk.</p>
-      ) : (
-        <table style={table}>
-          <thead>
-            <tr>
-              <th style={th}>Nama</th>
-              <th style={th}>Kategori</th>
-              <th style={th}>SKU</th>
-              <th style={{ ...th, textAlign: "right" }}>Harga</th>
-              <th style={{ ...th, textAlign: "center" }}>Varian</th>
-              {canEdit && <th style={th}></th>}
-            </tr>
-          </thead>
-          <tbody>
-            {products.map((p) => (
-              <tr key={p.id}>
-                <td style={td}>{p.name}</td>
-                <td style={td}>{catName(p.category_id)}</td>
-                <td style={td}>{p.sku ?? "—"}</td>
-                <td style={{ ...td, textAlign: "right" }}>{formatRupiah(p.price)}</td>
-                <td style={{ ...td, textAlign: "center" }}>{p.variant_count}</td>
-                {canEdit && (
-                  <td style={{ ...td, textAlign: "right", whiteSpace: "nowrap" }}>
-                    <button onClick={() => openEdit(p)} style={linkBtn}>
-                      Edit
-                    </button>
-                    <button onClick={() => onDelete(p)} style={{ ...linkBtn, color: "#dc2626" }}>
-                      Hapus
-                    </button>
-                  </td>
-                )}
+        {loading ? (
+          <p className="muted" style={{ padding: "0 1rem 1rem" }}>
+            Memuat…
+          </p>
+        ) : products.length === 0 ? (
+          <p className="muted" style={{ padding: "0 1rem 1.5rem" }}>
+            Belum ada produk. Klik <strong>Tambah Produk</strong> untuk mulai.
+          </p>
+        ) : (
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Nama</th>
+                <th>Kategori</th>
+                <th>SKU</th>
+                <th className="num">Harga</th>
+                <th className="center">Varian</th>
+                {canEdit && <th></th>}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+            </thead>
+            <tbody>
+              {products.map((p) => (
+                <tr key={p.id}>
+                  <td style={{ fontWeight: 500 }}>{p.name}</td>
+                  <td>{catName(p.category_id)}</td>
+                  <td className="muted">{p.sku ?? "—"}</td>
+                  <td className="num money">{formatRupiah(p.price)}</td>
+                  <td className="center">
+                    {p.variant_count > 0 ? (
+                      <span className="chip chip-brand">{p.variant_count}</span>
+                    ) : (
+                      <span className="muted">—</span>
+                    )}
+                  </td>
+                  {canEdit && (
+                    <td className="num" style={{ whiteSpace: "nowrap" }}>
+                      <button onClick={() => openEdit(p)} className="btn-link">
+                        Edit
+                      </button>
+                      <button onClick={() => onDelete(p)} className="btn-link danger">
+                        Hapus
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
 
       {formOpen && (
         <ProductForm
@@ -132,40 +147,6 @@ export function ProductsPage() {
           }}
         />
       )}
-    </main>
+    </div>
   );
 }
-
-const primaryBtn: CSSProperties = {
-  padding: "9px 16px",
-  background: "#2563eb",
-  color: "#fff",
-  border: "none",
-  borderRadius: 8,
-  cursor: "pointer",
-};
-const searchInput: CSSProperties = {
-  width: "100%",
-  padding: "10px 12px",
-  border: "1px solid #ccc",
-  borderRadius: 8,
-  fontSize: 14,
-  margin: "16px 0",
-  boxSizing: "border-box",
-};
-const table: CSSProperties = { width: "100%", borderCollapse: "collapse", fontSize: 14 };
-const th: CSSProperties = {
-  textAlign: "left",
-  padding: "10px 12px",
-  borderBottom: "2px solid #e5e7eb",
-  color: "#374151",
-};
-const td: CSSProperties = { padding: "10px 12px", borderBottom: "1px solid #f0f0f0" };
-const linkBtn: CSSProperties = {
-  background: "none",
-  border: "none",
-  color: "#2563eb",
-  cursor: "pointer",
-  padding: "0 8px",
-  fontSize: 14,
-};

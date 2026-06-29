@@ -2,7 +2,6 @@ import { useState, type FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { ApiError } from "../api/client";
-import { wrap, card, label, input, button, errBox } from "./authStyles";
 
 // Registrasi admin pertama + toko (bootstrap). Backend menolak bila sudah ada user.
 export function RegisterPage() {
@@ -32,42 +31,51 @@ export function RegisterPage() {
   }
 
   return (
-    <div style={wrap}>
-      <form onSubmit={onSubmit} style={card}>
-        <h1>MZ POS</h1>
-        <p style={{ color: "#666", marginTop: 0 }}>Daftar admin & toko pertama</p>
+    <div className="auth-wrap">
+      <form onSubmit={onSubmit} className="auth-card">
+        <div className="auth-brand">
+          <div className="brand-mark">MZ</div>
+          <h1>POS</h1>
+        </div>
+        <p className="auth-sub">Daftar admin &amp; toko pertama</p>
 
-        {error && <p style={errBox}>{error}</p>}
+        {error && <p className="err-box">{error}</p>}
 
-        <label style={label}>
+        <label className="field">
           Nama Toko
-          <input value={form.store_name} onChange={set("store_name")} required style={input} />
+          <input className="input" value={form.store_name} onChange={set("store_name")} required />
         </label>
-        <label style={label}>
+        <label className="field">
           Nama Admin
-          <input value={form.name} onChange={set("name")} required style={input} />
+          <input className="input" value={form.name} onChange={set("name")} required />
         </label>
-        <label style={label}>
+        <label className="field">
           Email
-          <input type="email" value={form.email} onChange={set("email")} required style={input} />
+          <input
+            className="input"
+            type="email"
+            value={form.email}
+            onChange={set("email")}
+            required
+          />
         </label>
-        <label style={label}>
+        <label className="field">
           Password
           <input
+            className="input"
             type="password"
             value={form.password}
             onChange={set("password")}
             required
             minLength={8}
-            style={input}
           />
         </label>
 
-        <button type="submit" disabled={busy} style={button}>
+        <button type="submit" disabled={busy} className="btn btn-primary" style={{ justifyContent: "center" }}>
           {busy ? "Memproses…" : "Daftar"}
         </button>
 
-        <p style={{ fontSize: 14, color: "#666", textAlign: "center" }}>
+        <p className="auth-foot">
           Sudah punya akun? <Link to="/login">Masuk</Link>
         </p>
       </form>

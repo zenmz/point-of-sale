@@ -1,4 +1,4 @@
-import { useState, type CSSProperties, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import * as catalogApi from "../../api/catalog";
 import { ApiError } from "../../api/client";
 import type { Category, Product, ProductInput, Variant } from "../../types/catalog";
@@ -75,40 +75,40 @@ export function ProductForm({ product, categories, onClose, onSaved }: Props) {
   }
 
   return (
-    <div style={overlay} onClick={onClose}>
-      <form style={modal} onClick={(e) => e.stopPropagation()} onSubmit={onSubmit}>
-        <h2 style={{ marginTop: 0 }}>{product ? "Edit Produk" : "Tambah Produk"}</h2>
+    <div className="overlay" onClick={onClose}>
+      <form className="modal" onClick={(e) => e.stopPropagation()} onSubmit={onSubmit}>
+        <h2>{product ? "Edit Produk" : "Tambah Produk"}</h2>
 
-        {error && <p style={errBox}>{error}</p>}
+        {error && <p className="err-box">{error}</p>}
 
-        <label style={label}>
+        <label className="field">
           Nama Produk
           <input
+            className="input"
             value={form.name}
             onChange={(e) => setField("name", e.target.value)}
             required
-            style={input}
           />
         </label>
 
-        <div style={{ display: "flex", gap: 12 }}>
-          <label style={{ ...label, flex: 1 }}>
+        <div className="row">
+          <label className="field" style={{ flex: 1 }}>
             Harga (Rp)
             <input
+              className="input"
               type="number"
               min={0}
               value={form.price}
               onChange={(e) => setField("price", Number(e.target.value))}
               required
-              style={input}
             />
           </label>
-          <label style={{ ...label, flex: 1 }}>
+          <label className="field" style={{ flex: 1 }}>
             Kategori
             <select
+              className="input"
               value={form.category_id ?? ""}
               onChange={(e) => setField("category_id", e.target.value || null)}
-              style={input}
             >
               <option value="">— tanpa kategori —</option>
               {categories.map((c) => (
@@ -120,41 +120,45 @@ export function ProductForm({ product, categories, onClose, onSaved }: Props) {
           </label>
         </div>
 
-        <div style={{ display: "flex", gap: 12 }}>
-          <label style={{ ...label, flex: 1 }}>
+        <div className="row">
+          <label className="field" style={{ flex: 1 }}>
             SKU
             <input
+              className="input"
               value={form.sku ?? ""}
               onChange={(e) => setField("sku", e.target.value)}
-              style={input}
             />
           </label>
-          <label style={{ ...label, flex: 1 }}>
+          <label className="field" style={{ flex: 1 }}>
             Barcode
             <input
+              className="input"
               value={form.barcode ?? ""}
               onChange={(e) => setField("barcode", e.target.value)}
-              style={input}
             />
           </label>
         </div>
 
+        <hr className="tear" />
+
         <div>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <strong style={{ fontSize: 14 }}>Varian (opsional)</strong>
-            <button type="button" onClick={addVariant} style={smallBtn}>
+          <div className="between">
+            <strong style={{ fontSize: "0.9rem" }}>Varian (opsional)</strong>
+            <button type="button" onClick={addVariant} className="btn btn-ghost btn-sm">
               + Varian
             </button>
           </div>
           {form.variants.map((v, i) => (
-            <div key={i} style={{ display: "flex", gap: 8, marginTop: 8 }}>
+            <div key={i} className="row" style={{ marginTop: "0.5rem" }}>
               <input
+                className="input"
                 placeholder="Nama varian"
                 value={v.name}
                 onChange={(e) => setVariant(i, { name: e.target.value })}
-                style={{ ...input, flex: 2 }}
+                style={{ flex: 2 }}
               />
               <input
+                className="input"
                 placeholder="Harga (kosong = ikut produk)"
                 type="number"
                 min={0}
@@ -162,20 +166,25 @@ export function ProductForm({ product, categories, onClose, onSaved }: Props) {
                 onChange={(e) =>
                   setVariant(i, { price: e.target.value === "" ? null : Number(e.target.value) })
                 }
-                style={{ ...input, flex: 1 }}
+                style={{ flex: 1 }}
               />
-              <button type="button" onClick={() => removeVariant(i)} style={delBtn}>
+              <button
+                type="button"
+                onClick={() => removeVariant(i)}
+                className="btn btn-danger btn-sm"
+                aria-label="Hapus varian"
+              >
                 ✕
               </button>
             </div>
           ))}
         </div>
 
-        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 8 }}>
-          <button type="button" onClick={onClose} style={ghostBtn}>
+        <div className="row" style={{ justifyContent: "flex-end", marginTop: "0.5rem" }}>
+          <button type="button" onClick={onClose} className="btn btn-ghost">
             Batal
           </button>
-          <button type="submit" disabled={busy} style={primaryBtn}>
+          <button type="submit" disabled={busy} className="btn btn-primary">
             {busy ? "Menyimpan…" : "Simpan"}
           </button>
         </div>
@@ -183,71 +192,3 @@ export function ProductForm({ product, categories, onClose, onSaved }: Props) {
     </div>
   );
 }
-
-const overlay: CSSProperties = {
-  position: "fixed",
-  inset: 0,
-  background: "rgba(0,0,0,0.4)",
-  display: "grid",
-  placeItems: "center",
-  padding: 16,
-  zIndex: 100,
-};
-const modal: CSSProperties = {
-  background: "#fff",
-  borderRadius: 12,
-  padding: 24,
-  width: 520,
-  maxWidth: "100%",
-  maxHeight: "90vh",
-  overflowY: "auto",
-  display: "flex",
-  flexDirection: "column",
-  gap: 12,
-};
-const label: CSSProperties = { display: "flex", flexDirection: "column", gap: 4, fontSize: 14 };
-const input: CSSProperties = {
-  padding: "9px 11px",
-  border: "1px solid #ccc",
-  borderRadius: 8,
-  fontSize: 14,
-};
-const primaryBtn: CSSProperties = {
-  padding: "9px 18px",
-  background: "#2563eb",
-  color: "#fff",
-  border: "none",
-  borderRadius: 8,
-  cursor: "pointer",
-};
-const ghostBtn: CSSProperties = {
-  padding: "9px 18px",
-  background: "#f1f5f9",
-  border: "none",
-  borderRadius: 8,
-  cursor: "pointer",
-};
-const smallBtn: CSSProperties = {
-  padding: "5px 10px",
-  background: "#e0e7ff",
-  border: "none",
-  borderRadius: 6,
-  cursor: "pointer",
-  fontSize: 13,
-};
-const delBtn: CSSProperties = {
-  padding: "0 10px",
-  background: "#fee2e2",
-  color: "#b91c1c",
-  border: "none",
-  borderRadius: 6,
-  cursor: "pointer",
-};
-const errBox: CSSProperties = {
-  background: "#fee2e2",
-  color: "#b91c1c",
-  padding: "8px 12px",
-  borderRadius: 8,
-  fontSize: 14,
-  margin: 0,
-};

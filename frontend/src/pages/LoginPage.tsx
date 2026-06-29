@@ -2,7 +2,6 @@ import { useState, type FormEvent } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { ApiError } from "../api/client";
-import { wrap, card, label, input, button, errBox } from "./authStyles";
 
 export function LoginPage() {
   const { login } = useAuth();
@@ -27,39 +26,42 @@ export function LoginPage() {
   }
 
   return (
-    <div style={wrap}>
-      <form onSubmit={onSubmit} style={card}>
-        <h1>MZ POS</h1>
-        <p style={{ color: "#666", marginTop: 0 }}>Masuk ke akun Anda</p>
+    <div className="auth-wrap">
+      <form onSubmit={onSubmit} className="auth-card">
+        <div className="auth-brand">
+          <div className="brand-mark">MZ</div>
+          <h1>POS</h1>
+        </div>
+        <p className="auth-sub">Masuk ke akun Anda</p>
 
-        {error && <p style={errBox}>{error}</p>}
+        {error && <p className="err-box">{error}</p>}
 
-        <label style={label}>
+        <label className="field">
           Email
           <input
+            className="input"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            style={input}
           />
         </label>
-        <label style={label}>
+        <label className="field">
           Password
           <input
+            className="input"
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            style={input}
           />
         </label>
 
-        <button type="submit" disabled={busy} style={button}>
+        <button type="submit" disabled={busy} className="btn btn-primary" style={{ justifyContent: "center" }}>
           {busy ? "Memproses…" : "Masuk"}
         </button>
 
-        <p style={{ fontSize: 14, color: "#666", textAlign: "center" }}>
+        <p className="auth-foot">
           Belum ada akun? <Link to="/register">Daftar admin pertama</Link>
         </p>
       </form>

@@ -43,6 +43,14 @@ Legenda: `[BE]` backend Go · `[FE]` frontend React · `[DB]` skema database · 
 > dropdown, tapi penambahan kategori baru lewat UI belum ada (endpoint backend
 > siap). Hapus produk = soft-delete. Varian count di list via subquery.
 
+### M1.2b — Fondasi UI (design system + app shell) ✅
+- [x] `[FE]` Design system "Pasar": token warna (jade/kertas/ink/saffron), 3 font
+      (Bricolage Grotesque / Inter / Spline Sans Mono), kelas dasar (btn, field,
+      card, table, chip, tear-line, money)
+- [x] `[FE]` App shell: sidebar nav (mengikuti roadmap, item belum jadi = "segera")
+      + topbar (chip shift, user, logout) + responsif bottom/burger di mobile
+- [x] `[FE]` Refit halaman login, register, dashboard, produk, form ke design system
+
 ### M1.3 — Stok Dasar
 - [ ] `[DB]` Tabel `inventory` (stok per produk), `stock_movements`
 - [ ] `[BE]` Endpoint set/adjust stok (masuk/keluar + alasan)

@@ -1,50 +1,67 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import { IconBox, IconCart, IconLayers, IconChart } from "../components/icons";
+
+// Ringkasan masih placeholder; angka nyata menyusul (M1.8 Laporan).
+const STATS = [
+  { label: "Penjualan hari ini", value: "Rp 0" },
+  { label: "Transaksi", value: "0" },
+  { label: "Produk aktif", value: "—" },
+  { label: "Stok menipis", value: "—" },
+];
 
 export function DashboardPage() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
   return (
-    <main style={{ fontFamily: "system-ui", padding: "2rem" }}>
-      <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1 style={{ margin: 0 }}>MZ POS</h1>
-        <button onClick={logout} style={logoutBtn}>
-          Keluar
-        </button>
-      </header>
+    <div className="stack">
+      <div>
+        <h1>Halo, {user?.name} 👋</h1>
+        <p className="muted" style={{ marginTop: 4 }}>
+          Ringkasan toko Anda. Data transaksi muncul setelah modul kasir aktif.
+        </p>
+      </div>
 
-      <p>
-        Selamat datang, <strong>{user?.name}</strong> ({user?.role}).
-      </p>
+      <div className="stat-grid">
+        {STATS.map((s) => (
+          <div key={s.label} className="card">
+            <div className="stat-label">{s.label}</div>
+            <div className="stat-value">{s.value}</div>
+          </div>
+        ))}
+      </div>
 
-      <nav style={{ display: "flex", gap: 12, marginTop: 16 }}>
-        <Link to="/products" style={navCard}>
-          📦 Produk
-        </Link>
-      </nav>
+      <hr className="tear" />
 
-      <p style={{ color: "#666", marginTop: 24 }}>
-        Menu lain (transaksi, stok, laporan) menyusul pada milestone berikut.
-      </p>
-    </main>
+      <div>
+        <h2 style={{ marginBottom: "0.85rem" }}>Aksi cepat</h2>
+        <div className="quick-grid">
+          <Link to="/products" className="quick">
+            <span className="quick-ico">
+              <IconBox />
+            </span>
+            Produk
+          </Link>
+          <span className="quick soon">
+            <span className="quick-ico">
+              <IconCart />
+            </span>
+            Mulai jualan
+          </span>
+          <span className="quick soon">
+            <span className="quick-ico">
+              <IconLayers />
+            </span>
+            Kelola stok
+          </span>
+          <span className="quick soon">
+            <span className="quick-ico">
+              <IconChart />
+            </span>
+            Laporan
+          </span>
+        </div>
+      </div>
+    </div>
   );
 }
-
-const logoutBtn: React.CSSProperties = {
-  padding: "8px 14px",
-  background: "#ef4444",
-  color: "#fff",
-  border: "none",
-  borderRadius: 8,
-  cursor: "pointer",
-};
-
-const navCard: React.CSSProperties = {
-  display: "block",
-  padding: "16px 24px",
-  background: "#f1f5f9",
-  borderRadius: 10,
-  textDecoration: "none",
-  color: "#1e293b",
-  fontWeight: 500,
-};
