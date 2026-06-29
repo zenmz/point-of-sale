@@ -71,7 +71,12 @@ export function RegisterPage() {
           />
         </label>
 
-        <button type="submit" disabled={busy} className="btn btn-primary" style={{ justifyContent: "center" }}>
+        <button
+          type="submit"
+          disabled={busy}
+          className="btn btn-primary"
+          style={{ justifyContent: "center" }}
+        >
           {busy ? "Memproses…" : "Daftar"}
         </button>
 

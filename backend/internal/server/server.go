@@ -10,6 +10,7 @@ import (
 	"github.com/mzpos/backend/internal/auth"
 	"github.com/mzpos/backend/internal/catalog"
 	"github.com/mzpos/backend/internal/config"
+	"github.com/mzpos/backend/internal/inventory"
 )
 
 // Server membungkus instance Fiber, konfigurasi, dan koneksi database.
@@ -67,6 +68,7 @@ func (s *Server) registerRoutes() {
 	})
 
 	catalog.NewHandler(catalog.NewRepository(s.db), tokens).Register(api)
+	inventory.NewHandler(inventory.NewRepository(s.db), tokens).Register(api)
 }
 
 // errorHandler menyeragamkan format respons error.

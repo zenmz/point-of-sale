@@ -100,6 +100,7 @@ export function ProductsPage() {
                 <th>Kategori</th>
                 <th>SKU</th>
                 <th className="num">Harga</th>
+                <th className="num">Stok</th>
                 <th className="center">Varian</th>
                 {canEdit && <th></th>}
               </tr>
@@ -111,6 +112,9 @@ export function ProductsPage() {
                   <td>{catName(p.category_id)}</td>
                   <td className="muted">{p.sku ?? "—"}</td>
                   <td className="num money">{formatRupiah(p.price)}</td>
+                  <td className="num">
+                    {p.stock <= 5 ? <span className="chip chip-accent">{p.stock}</span> : p.stock}
+                  </td>
                   <td className="center">
                     {p.variant_count > 0 ? (
                       <span className="chip chip-brand">{p.variant_count}</span>

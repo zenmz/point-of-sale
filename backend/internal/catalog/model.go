@@ -31,4 +31,6 @@ type Product struct {
 	Variants   []Variant `json:"variants,omitempty"`
 	// VariantCount diisi pada daftar produk (list) tanpa memuat seluruh varian.
 	VariantCount int `json:"variant_count"`
+	// Stock diisi pada daftar produk (list) dari tabel inventory (0 bila belum diatur).
+	Stock int64 `json:"stock"`
 }

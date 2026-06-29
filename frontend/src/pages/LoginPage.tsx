@@ -57,7 +57,12 @@ export function LoginPage() {
           />
         </label>
 
-        <button type="submit" disabled={busy} className="btn btn-primary" style={{ justifyContent: "center" }}>
+        <button
+          type="submit"
+          disabled={busy}
+          className="btn btn-primary"
+          style={{ justifyContent: "center" }}
+        >
           {busy ? "Memproses…" : "Masuk"}
         </button>
 

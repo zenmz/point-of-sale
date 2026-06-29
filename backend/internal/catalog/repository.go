@@ -94,8 +94,10 @@ func (r *Repository) ListProducts(ctx context.Context, storeID, search string) (
 	rows, err := r.db.Query(ctx,
 		`SELECT p.id, p.store_id, p.category_id, p.name, p.sku, p.barcode, p.price,
 		        p.is_active, p.created_at,
-		        (SELECT count(*) FROM variants v WHERE v.product_id = p.id) AS variant_count
+		        (SELECT count(*) FROM variants v WHERE v.product_id = p.id) AS variant_count,
+		        COALESCE(i.quantity, 0) AS stock
 		 FROM products p
+		 LEFT JOIN inventory i ON i.product_id = p.id
 		 WHERE p.store_id = $1 AND p.is_active = TRUE
 		   AND ($2 = '' OR p.name ILIKE '%'||$2||'%' OR p.sku ILIKE '%'||$2||'%' OR p.barcode ILIKE '%'||$2||'%')
 		 ORDER BY p.name`, storeID, search)
@@ -108,7 +110,7 @@ func (r *Repository) ListProducts(ctx context.Context, storeID, search string) (
 	for rows.Next() {
 		var p Product
 		if err := rows.Scan(&p.ID, &p.StoreID, &p.CategoryID, &p.Name, &p.SKU,
-			&p.Barcode, &p.Price, &p.IsActive, &p.CreatedAt, &p.VariantCount); err != nil {
+			&p.Barcode, &p.Price, &p.IsActive, &p.CreatedAt, &p.VariantCount, &p.Stock); err != nil {
 			return nil, err
 		}
 		products = append(products, p)

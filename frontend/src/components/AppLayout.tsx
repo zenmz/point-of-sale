@@ -1,15 +1,7 @@
 import { useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
-import {
-  IconHome,
-  IconCart,
-  IconBox,
-  IconLayers,
-  IconChart,
-  IconLogout,
-  IconMenu,
-} from "./icons";
+import { IconHome, IconCart, IconBox, IconLayers, IconChart, IconLogout, IconMenu } from "./icons";
 import type { ComponentType } from "react";
 import "./AppLayout.css";
 
@@ -25,7 +17,7 @@ const NAV: NavConf[] = [
   { to: "/", label: "Ringkasan", icon: IconHome },
   { to: "/kasir", label: "Kasir", icon: IconCart, soon: true },
   { to: "/products", label: "Produk", icon: IconBox },
-  { to: "/stok", label: "Stok", icon: IconLayers, soon: true },
+  { to: "/stok", label: "Stok", icon: IconLayers },
   { to: "/laporan", label: "Laporan", icon: IconChart, soon: true },
 ];
 

@@ -26,6 +26,7 @@ export interface Product {
   created_at: string;
   variants?: Variant[];
   variant_count: number;
+  stock: number;
 }
 
 // Payload untuk create/update produk.

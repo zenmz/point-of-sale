@@ -51,12 +51,16 @@ Legenda: `[BE]` backend Go · `[FE]` frontend React · `[DB]` skema database · 
       + topbar (chip shift, user, logout) + responsif bottom/burger di mobile
 - [x] `[FE]` Refit halaman login, register, dashboard, produk, form ke design system
 
-### M1.3 — Stok Dasar
-- [ ] `[DB]` Tabel `inventory` (stok per produk), `stock_movements`
-- [ ] `[BE]` Endpoint set/adjust stok (masuk/keluar + alasan)
-- [ ] `[BE]` Catat `stock_movement` tiap perubahan (audit trail)
-- [ ] `[FE]` Halaman kelola stok + riwayat pergerakan
-- [ ] `[FE]` Tampilkan stok di daftar produk
+### M1.3 — Stok Dasar ✅
+- [x] `[DB]` Tabel `inventory` (stok per produk), `stock_movements`
+- [x] `[BE]` Endpoint set/adjust stok (masuk/keluar + alasan)
+- [x] `[BE]` Catat `stock_movement` tiap perubahan (audit trail)
+- [x] `[FE]` Halaman kelola stok + riwayat pergerakan
+- [x] `[FE]` Tampilkan stok di daftar produk
+
+> Catatan: stok di level produk (bukan varian) untuk MVP. Penyesuaian
+> transaksional (kunci baris + upsert + catat movement). Tiga jenis gerakan:
+> masuk/keluar/penyesuaian (set absolut). Ambang "menipis" = 5 (tetap, di FE).
 
 ### M1.4 — Keranjang & Checkout
 - [ ] `[FE]` UI kasir: cari/scan produk → tambah ke keranjang
