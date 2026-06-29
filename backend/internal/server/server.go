@@ -11,6 +11,7 @@ import (
 	"github.com/mzpos/backend/internal/catalog"
 	"github.com/mzpos/backend/internal/config"
 	"github.com/mzpos/backend/internal/inventory"
+	"github.com/mzpos/backend/internal/report"
 	"github.com/mzpos/backend/internal/shift"
 	"github.com/mzpos/backend/internal/transaction"
 )
@@ -73,6 +74,7 @@ func (s *Server) registerRoutes() {
 	inventory.NewHandler(inventory.NewRepository(s.db), tokens).Register(api)
 	transaction.NewHandler(transaction.NewRepository(s.db), tokens).Register(api)
 	shift.NewHandler(shift.NewRepository(s.db), tokens).Register(api)
+	report.NewHandler(report.NewRepository(s.db), tokens).Register(api)
 }
 
 // errorHandler menyeragamkan format respons error.

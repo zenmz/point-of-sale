@@ -12,6 +12,7 @@ const STATS = [
 
 export function DashboardPage() {
   const { user } = useAuth();
+  const isAdmin = user?.role === "admin" || user?.role === "owner";
 
   return (
     <div className="stack">
@@ -54,12 +55,21 @@ export function DashboardPage() {
             </span>
             Kelola stok
           </Link>
-          <span className="quick soon">
-            <span className="quick-ico">
-              <IconChart />
+          {isAdmin ? (
+            <Link to="/laporan" className="quick">
+              <span className="quick-ico">
+                <IconChart />
+              </span>
+              Laporan
+            </Link>
+          ) : (
+            <span className="quick soon">
+              <span className="quick-ico">
+                <IconChart />
+              </span>
+              Laporan
             </span>
-            Laporan
-          </span>
+          )}
         </div>
       </div>
     </div>

@@ -809,6 +809,55 @@ select.input {
   }
 }
 
+/* ===================== Laporan ===================== */
+.report-filter {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.report-filter .field {
+  gap: 0.2rem;
+}
+.report-filter .input[type="date"] {
+  width: auto;
+}
+.report-cols {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+.card-head {
+  font-family: var(--display);
+  font-weight: 600;
+  color: var(--ink);
+  padding: 0.9rem 1rem 0.6rem;
+  border-bottom: 1px solid var(--line);
+}
+.report-empty {
+  padding: 1rem;
+}
+.bar {
+  height: 4px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  margin-top: 5px;
+  overflow: hidden;
+}
+.bar > span {
+  display: block;
+  height: 100%;
+  background: var(--brand);
+  border-radius: 999px;
+}
+
+@media (max-width: 860px) {
+  .report-cols {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ===================== Struk (thermal) ===================== */
 .receipt-actions {
   display: flex;

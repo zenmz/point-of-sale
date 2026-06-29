@@ -11,6 +11,7 @@ interface NavConf {
   label: string;
   icon: ComponentType<{ size?: number }>;
   soon?: boolean;
+  adminOnly?: boolean;
 }
 
 // Menu mengikuti roadmap milestone; yang belum dibangun ditandai "segera".
@@ -19,7 +20,7 @@ const NAV: NavConf[] = [
   { to: "/kasir", label: "Kasir", icon: IconCart },
   { to: "/products", label: "Produk", icon: IconBox },
   { to: "/stok", label: "Stok", icon: IconLayers },
-  { to: "/laporan", label: "Laporan", icon: IconChart, soon: true },
+  { to: "/laporan", label: "Laporan", icon: IconChart, adminOnly: true },
 ];
 
 export function AppLayout() {
@@ -27,7 +28,10 @@ export function AppLayout() {
   const location = useLocation();
   const [open, setOpen] = useState(false);
 
-  const current = NAV.find((n) => n.to === location.pathname);
+  const isAdmin = user?.role === "admin" || user?.role === "owner";
+  const nav = NAV.filter((n) => !n.adminOnly || isAdmin);
+
+  const current = nav.find((n) => n.to === location.pathname);
   const title = current?.label ?? "MZ POS";
   const initial = user?.name?.charAt(0).toUpperCase() ?? "?";
 
@@ -41,7 +45,7 @@ export function AppLayout() {
 
         <nav className="nav">
           <div className="nav-section">Operasi</div>
-          {NAV.map((n) => {
+          {nav.map((n) => {
             const Icon = n.icon;
             if (n.soon) {
               return (

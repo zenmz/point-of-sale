@@ -115,12 +115,17 @@ Legenda: `[BE]` backend Go · `[FE]` frontend React · `[DB]` skema database · 
 > GET /shifts/current (204 bila tak ada), POST /shifts/open, /shifts/close.
 > Chip shift di topbar jadi tombol buka/tutup; tutup tampilkan rekap + selisih.
 
-### M1.8 — Laporan Dasar
-- [ ] `[BE]` Endpoint laporan penjualan harian
-- [ ] `[BE]` Endpoint produk terlaris
-- [ ] `[BE]` Endpoint ringkasan per metode bayar
-- [ ] `[FE]` Halaman laporan + filter tanggal
-- [ ] `[FE]` Tampilkan ringkasan (kartu + tabel)
+### M1.8 — Laporan Dasar ✅
+- [x] `[BE]` Endpoint laporan penjualan harian
+- [x] `[BE]` Endpoint produk terlaris
+- [x] `[BE]` Endpoint ringkasan per metode bayar
+- [x] `[FE]` Halaman laporan + filter tanggal
+- [x] `[FE]` Tampilkan ringkasan (kartu + tabel)
+
+> Catatan: laporan hanya admin/owner (RBAC). Endpoint /reports/sales (ringkasan +
+> harian), /top-products, /payment-methods; filter from/to (default hari ini).
+> Hanya transaksi 'selesai'. Metode bayar pakai nilai bersih (amount − kembalian).
+> Nav "Laporan" & quick link dashboard di-gate per role.
 
 ### M1.9 — Rilis MVP
 - [ ] `[INFRA]` Setup PWA manifest + service worker dasar (installable)
