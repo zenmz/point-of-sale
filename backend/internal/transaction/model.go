@@ -9,6 +9,32 @@ const (
 	StatusBatal   Status = "batal"
 )
 
+// Method = metode pembayaran (selaras enum payment_method).
+type Method string
+
+const (
+	Tunai    Method = "tunai"
+	QRIS     Method = "qris"
+	EWallet  Method = "ewallet"
+	Transfer Method = "transfer"
+)
+
+func (m Method) valid() bool {
+	switch m {
+	case Tunai, QRIS, EWallet, Transfer:
+		return true
+	default:
+		return false
+	}
+}
+
+// Payment = pembayaran satu nota.
+type Payment struct {
+	Method Method `json:"method"`
+	Amount int64  `json:"amount"`
+	Change int64  `json:"change"`
+}
+
 // Item = satu baris nota (snapshot nama & harga produk).
 type Item struct {
 	ID        string  `json:"id"`
@@ -37,6 +63,7 @@ type Transaction struct {
 	Status         Status    `json:"status"`
 	CreatedAt      time.Time `json:"created_at"`
 	Items          []Item    `json:"items"`
+	Payment        *Payment  `json:"payment"`
 }
 
 // ItemInput = item yang dikirim klien saat checkout.
@@ -55,4 +82,6 @@ type CreateInput struct {
 	Discount       int64
 	TaxPercent     float64
 	ServicePercent float64
+	Method         Method
+	PaidAmount     int64 // jumlah dibayar (>= total)
 }

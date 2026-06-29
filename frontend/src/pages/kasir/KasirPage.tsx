@@ -5,8 +5,16 @@ import { ApiError } from "../../api/client";
 import { formatRupiah } from "../../lib/format";
 import { IconPlus } from "../../components/icons";
 import type { Product } from "../../types/catalog";
-import type { Transaction } from "../../types/transaction";
+import type { PaymentMethod, Transaction } from "../../types/transaction";
 import { computeTotals, lineTotal, newLine, type CartLine } from "./cart";
+import { PaymentModal } from "./PaymentModal";
+
+const METHOD_LABEL: Record<PaymentMethod, string> = {
+  tunai: "Tunai",
+  qris: "QRIS",
+  ewallet: "E-Wallet",
+  transfer: "Transfer",
+};
 
 export function KasirPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -21,6 +29,7 @@ export function KasirPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<Transaction | null>(null);
+  const [paying, setPaying] = useState(false);
 
   const load = useCallback(async (q: string) => {
     setLoading(true);
@@ -69,10 +78,16 @@ export function KasirPage() {
     setNotaDiscount(0);
     setError(null);
     setDone(null);
+    setPaying(false);
   }
 
-  async function onCheckout() {
+  function openPayment() {
     if (cart.length === 0) return;
+    setError(null);
+    setPaying(true);
+  }
+
+  async function onPay(method: PaymentMethod, paidAmount: number) {
     setBusy(true);
     setError(null);
     try {
@@ -81,7 +96,10 @@ export function KasirPage() {
         discount: notaDiscount,
         tax_percent: taxPercent,
         service_percent: servicePercent,
+        method,
+        paid_amount: paidAmount,
       });
+      setPaying(false);
       setDone(tx);
       setCart([]);
       setNotaDiscount(0);
@@ -280,12 +298,22 @@ export function KasirPage() {
         <button
           className="btn btn-primary btn-block"
           disabled={cart.length === 0 || busy}
-          onClick={onCheckout}
+          onClick={openPayment}
         >
           <IconPlus size={18} />
-          {busy ? "Memproses…" : `Bayar ${formatRupiah(totals.total)}`}
+          {`Bayar ${formatRupiah(totals.total)}`}
         </button>
       </section>
+
+      {paying && (
+        <PaymentModal
+          total={totals.total}
+          busy={busy}
+          error={error}
+          onClose={() => setPaying(false)}
+          onConfirm={onPay}
+        />
+      )}
     </div>
   );
 }
@@ -325,10 +353,24 @@ function SaleSuccess({ tx, onNew }: { tx: Transaction; onNew: () => void }) {
             <dt>Total</dt>
             <dd className="money">{formatRupiah(tx.total)}</dd>
           </div>
+          {tx.payment && (
+            <>
+              <div>
+                <dt>Bayar ({METHOD_LABEL[tx.payment.method]})</dt>
+                <dd className="money">{formatRupiah(tx.payment.amount)}</dd>
+              </div>
+              {tx.payment.change > 0 && (
+                <div>
+                  <dt>Kembalian</dt>
+                  <dd className="money">{formatRupiah(tx.payment.change)}</dd>
+                </div>
+              )}
+            </>
+          )}
         </dl>
 
         <p className="muted" style={{ fontSize: "0.82rem", marginTop: "0.5rem" }}>
-          Pembayaran &amp; struk menyusul di modul berikutnya.
+          Struk menyusul di modul berikutnya.
         </p>
 
         <button className="btn btn-primary btn-block" onClick={onNew}>

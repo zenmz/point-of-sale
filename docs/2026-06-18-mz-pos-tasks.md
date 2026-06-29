@@ -78,13 +78,18 @@ Legenda: `[BE]` backend Go · `[FE]` frontend React · `[DB]` skema database · 
 > Nama & harga item di-snapshot. Pajak/service % konfigurable di UI kasir
 > (default 0). Pembayaran & struk = M1.5/M1.6. `client_id` (offline) = M2.1.
 
-### M1.5 — Pembayaran
-- [ ] `[DB]` Tabel `payments` (method, amount)
-- [ ] `[BE]` Catat pembayaran terkait transaksi
-- [ ] `[FE]` Bayar tunai + hitung kembalian
-- [ ] `[FE]` Bayar QRIS — tampilkan QR (statis dulu) + tombol tandai lunas
-- [ ] `[FE]` Bayar e-wallet/transfer — tandai lunas manual
-- [ ] `[FE]` Layar sukses transaksi
+### M1.5 — Pembayaran ✅
+- [x] `[DB]` Tabel `payments` (method, amount)
+- [x] `[BE]` Catat pembayaran terkait transaksi
+- [x] `[FE]` Bayar tunai + hitung kembalian
+- [x] `[FE]` Bayar QRIS — tampilkan QR (statis dulu) + tombol tandai lunas
+- [x] `[FE]` Bayar e-wallet/transfer — tandai lunas manual
+- [x] `[FE]` Layar sukses transaksi
+
+> Catatan: pembayaran dicatat **atomik di dalam checkout** (satu DB tx dengan
+> nota + stok) — bukan endpoint terpisah, agar nota tak pernah ada tanpa bayar.
+> `paid_amount` wajib ≥ total (server validasi), kembalian = bayar − total.
+> QRIS = QR placeholder statis (dinamis menyusul). Split bayar = nanti.
 
 ### M1.6 — Struk
 - [ ] `[BE]` Generate data struk (nomor nota, item, total, bayar)

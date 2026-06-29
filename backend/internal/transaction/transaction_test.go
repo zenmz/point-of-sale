@@ -20,6 +20,19 @@ func TestClampPercent(t *testing.T) {
 	}
 }
 
+func TestMethodValid(t *testing.T) {
+	for _, m := range []Method{Tunai, QRIS, EWallet, Transfer} {
+		if !m.valid() {
+			t.Errorf("%q harusnya valid", m)
+		}
+	}
+	for _, m := range []Method{"", "kartu", "TUNAI"} {
+		if Method(m).valid() {
+			t.Errorf("%q harusnya tidak valid", m)
+		}
+	}
+}
+
 func TestInsufficientStockError(t *testing.T) {
 	err := &InsufficientStockError{Name: "Kopi", Available: 2, Requested: 5}
 	want := `stok "Kopi" tidak cukup (tersedia 2, diminta 5)`

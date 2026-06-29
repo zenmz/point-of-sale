@@ -31,6 +31,8 @@ type checkoutReq struct {
 	Discount       int64       `json:"discount"`
 	TaxPercent     float64     `json:"tax_percent"`
 	ServicePercent float64     `json:"service_percent"`
+	Method         Method      `json:"method"`
+	PaidAmount     int64       `json:"paid_amount"`
 }
 
 func (h *Handler) create(c *fiber.Ctx) error {
@@ -49,6 +51,8 @@ func (h *Handler) create(c *fiber.Ctx) error {
 		Discount:       req.Discount,
 		TaxPercent:     req.TaxPercent,
 		ServicePercent: req.ServicePercent,
+		Method:         req.Method,
+		PaidAmount:     req.PaidAmount,
 	})
 	if err != nil {
 		return mapErr(err)
@@ -69,7 +73,7 @@ func mapErr(err error) error {
 	switch {
 	case errors.As(err, &insufficient):
 		return fiber.NewError(fiber.StatusConflict, err.Error())
-	case errors.Is(err, ErrEmpty):
+	case errors.Is(err, ErrEmpty), errors.Is(err, ErrInvalidMethod), errors.Is(err, ErrPaymentShort):
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	case errors.Is(err, ErrProductNotFound), errors.Is(err, ErrNotFound):
 		return fiber.NewError(fiber.StatusNotFound, err.Error())

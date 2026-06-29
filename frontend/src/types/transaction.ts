@@ -1,5 +1,13 @@
 export type TransactionStatus = "selesai" | "batal";
 
+export type PaymentMethod = "tunai" | "qris" | "ewallet" | "transfer";
+
+export interface Payment {
+  method: PaymentMethod;
+  amount: number;
+  change: number;
+}
+
 export interface TransactionItem {
   id: string;
   product_id: string | null;
@@ -26,6 +34,7 @@ export interface Transaction {
   status: TransactionStatus;
   created_at: string;
   items: TransactionItem[];
+  payment: Payment | null;
 }
 
 // Payload checkout. Total dihitung ulang otoritatif di server.
@@ -40,4 +49,6 @@ export interface CheckoutInput {
   discount: number;
   tax_percent: number;
   service_percent: number;
+  method: PaymentMethod;
+  paid_amount: number;
 }

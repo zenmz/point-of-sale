@@ -14,6 +14,8 @@ var (
 	ErrEmpty           = errors.New("keranjang kosong")
 	ErrProductNotFound = errors.New("produk tidak ditemukan")
 	ErrNotFound        = errors.New("transaksi tidak ditemukan")
+	ErrInvalidMethod   = errors.New("metode pembayaran tidak valid")
+	ErrPaymentShort    = errors.New("pembayaran kurang dari total")
 )
 
 // InsufficientStockError menandai stok kurang untuk satu produk.
@@ -48,6 +50,9 @@ func clampNonNeg(v int64) int64 {
 func (r *Repository) Create(ctx context.Context, in CreateInput) (*Transaction, error) {
 	if len(in.Items) == 0 {
 		return nil, ErrEmpty
+	}
+	if !in.Method.valid() {
+		return nil, ErrInvalidMethod
 	}
 
 	tx, err := r.db.Begin(ctx)
@@ -114,6 +119,12 @@ func (r *Repository) Create(ctx context.Context, in CreateInput) (*Transaction, 
 	service := int64(math.Round(float64(afterDisc) * svcPct / 100))
 	total := afterDisc + tax + service
 
+	// Pembayaran wajib menutup total. Kembalian hanya relevan untuk tunai.
+	if in.PaidAmount < total {
+		return nil, ErrPaymentShort
+	}
+	change := in.PaidAmount - total
+
 	// Nomor nota berikutnya (aman di bawah advisory lock).
 	var number int64
 	if err := tx.QueryRow(ctx,
@@ -168,6 +179,14 @@ func (r *Repository) Create(ctx context.Context, in CreateInput) (*Transaction, 
 		}
 	}
 
+	// Catat pembayaran (atomik dengan nota).
+	if _, err := tx.Exec(ctx,
+		`INSERT INTO payments (transaction_id, store_id, method, amount, change_amount)
+		 VALUES ($1,$2,$3,$4,$5)`,
+		txID, in.StoreID, in.Method, in.PaidAmount, change); err != nil {
+		return nil, err
+	}
+
 	if err := tx.Commit(ctx); err != nil {
 		return nil, err
 	}
@@ -211,7 +230,22 @@ func (r *Repository) Get(ctx context.Context, storeID, id string) (*Transaction,
 		}
 		t.Items = append(t.Items, it)
 	}
-	return t, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	// Pembayaran (boleh tidak ada untuk nota lama; MVP selalu ada).
+	var p Payment
+	err = r.db.QueryRow(ctx,
+		`SELECT method, amount, change_amount FROM payments
+		 WHERE transaction_id = $1 ORDER BY created_at LIMIT 1`, id).
+		Scan(&p.Method, &p.Amount, &p.Change)
+	if err == nil {
+		t.Payment = &p
+	} else if !errors.Is(err, pgx.ErrNoRows) {
+		return nil, err
+	}
+	return t, nil
 }
 
 // clampPercent membatasi persen ke rentang 0..100.

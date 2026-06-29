@@ -695,9 +695,96 @@ select.input {
   font-weight: 700;
 }
 
+/* Pembayaran */
+.pay-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0.75rem 0;
+  border-bottom: 1px dashed var(--line-strong);
+  margin-bottom: 0.5rem;
+}
+.pay-total .money {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--brand-700);
+}
+.pay-methods {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+  margin: 0.75rem 0;
+}
+.pay-method {
+  padding: 0.55rem 0.4rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.88rem;
+  color: var(--text);
+}
+.pay-method:hover {
+  border-color: var(--brand);
+}
+.pay-method.active {
+  background: var(--brand-100);
+  border-color: var(--brand);
+  color: var(--brand-700);
+  font-weight: 600;
+}
+.pay-quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.pay-change {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0.65rem 0.8rem;
+  border-radius: var(--r);
+  background: var(--brand-100);
+  color: var(--brand-700);
+  font-weight: 600;
+}
+.pay-change .money {
+  font-size: 1.15rem;
+}
+.pay-change.bad {
+  background: var(--danger-100);
+  color: var(--danger);
+}
+.qris-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.5rem 0;
+}
+.qris-frame {
+  width: 180px;
+  height: 180px;
+  margin: 0 auto;
+  border: 2px solid var(--ink);
+  border-radius: var(--r);
+  padding: 12px;
+  background: #fff;
+}
+.qris-dots {
+  width: 100%;
+  height: 100%;
+  background-image: repeating-conic-gradient(var(--ink) 0% 25%, #fff 0% 50%);
+  background-size: 18px 18px;
+  border-radius: 4px;
+}
+
 @media (max-width: 860px) {
   .kasir {
     grid-template-columns: 1fr;
+  }
+  .pay-methods {
+    grid-template-columns: repeat(2, 1fr);
   }
   .kasir-pick {
     max-height: none;
