@@ -91,11 +91,16 @@ Legenda: `[BE]` backend Go · `[FE]` frontend React · `[DB]` skema database · 
 > `paid_amount` wajib ≥ total (server validasi), kembalian = bayar − total.
 > QRIS = QR placeholder statis (dinamis menyusul). Split bayar = nanti.
 
-### M1.6 — Struk
-- [ ] `[BE]` Generate data struk (nomor nota, item, total, bayar)
-- [ ] `[FE]` Layout struk (thermal 58/80mm friendly)
-- [ ] `[FE]` Cetak via browser print
-- [ ] `[FE]` Export PDF / share digital (link/gambar)
+### M1.6 — Struk ✅
+- [x] `[BE]` Generate data struk (nomor nota, item, total, bayar)
+- [x] `[FE]` Layout struk (thermal 58/80mm friendly)
+- [x] `[FE]` Cetak via browser print
+- [x] `[FE]` Export PDF / share digital (link/gambar)
+
+> Catatan: data struk dari GET /transactions/:id (ditambah nama/alamat/telp toko).
+> Halaman `/struk/:id` dengan toggle lebar 58/80mm, `window.print()` (Save as PDF
+> dari dialog cetak), dan Bagikan (Web Share / salin tautan). Export **gambar**
+> ditunda (perlu html2canvas) — link + PDF sudah cukup untuk MVP.
 
 ### M1.7 — Shift Kasir
 - [ ] `[DB]` Tabel `shifts` (user, kas_awal, kas_akhir, waktu)

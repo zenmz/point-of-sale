@@ -21,6 +21,9 @@ export interface TransactionItem {
 export interface Transaction {
   id: string;
   store_id: string;
+  store_name: string;
+  store_address: string | null;
+  store_phone: string | null;
   cashier_id: string | null;
   cashier_name: string | null;
   number: number;

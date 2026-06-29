@@ -197,13 +197,15 @@ func (r *Repository) Create(ctx context.Context, in CreateInput) (*Transaction, 
 func (r *Repository) Get(ctx context.Context, storeID, id string) (*Transaction, error) {
 	t := &Transaction{}
 	err := r.db.QueryRow(ctx,
-		`SELECT t.id, t.store_id, t.cashier_id, u.name, t.number, t.subtotal, t.discount,
-		        t.tax_percent, t.tax, t.service_percent, t.service_charge, t.total,
-		        t.status, t.created_at
+		`SELECT t.id, t.store_id, s.name, s.address, s.phone, t.cashier_id, u.name,
+		        t.number, t.subtotal, t.discount, t.tax_percent, t.tax,
+		        t.service_percent, t.service_charge, t.total, t.status, t.created_at
 		 FROM transactions t
+		 JOIN stores s ON s.id = t.store_id
 		 LEFT JOIN users u ON u.id = t.cashier_id
 		 WHERE t.id = $1 AND t.store_id = $2`, id, storeID).
-		Scan(&t.ID, &t.StoreID, &t.CashierID, &t.CashierName, &t.Number, &t.Subtotal,
+		Scan(&t.ID, &t.StoreID, &t.StoreName, &t.StoreAddress, &t.StorePhone,
+			&t.CashierID, &t.CashierName, &t.Number, &t.Subtotal,
 			&t.Discount, &t.TaxPercent, &t.Tax, &t.ServicePercent, &t.ServiceCharge,
 			&t.Total, &t.Status, &t.CreatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {

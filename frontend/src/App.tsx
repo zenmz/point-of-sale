@@ -8,6 +8,7 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { ProductsPage } from "./pages/products/ProductsPage";
 import { StockPage } from "./pages/inventory/StockPage";
 import { KasirPage } from "./pages/kasir/KasirPage";
+import { ReceiptPage } from "./pages/kasir/ReceiptPage";
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
             <Route element={<AppLayout />}>
               <Route path="/" element={<DashboardPage />} />
               <Route path="/kasir" element={<KasirPage />} />
+              <Route path="/struk/:id" element={<ReceiptPage />} />
               <Route path="/products" element={<ProductsPage />} />
               <Route path="/stok" element={<StockPage />} />
             </Route>

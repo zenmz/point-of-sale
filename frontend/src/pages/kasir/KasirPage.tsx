@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import * as catalogApi from "../../api/catalog";
 import * as txApi from "../../api/transaction";
 import { ApiError } from "../../api/client";
@@ -369,11 +370,14 @@ function SaleSuccess({ tx, onNew }: { tx: Transaction; onNew: () => void }) {
           )}
         </dl>
 
-        <p className="muted" style={{ fontSize: "0.82rem", marginTop: "0.5rem" }}>
-          Struk menyusul di modul berikutnya.
-        </p>
-
-        <button className="btn btn-primary btn-block" onClick={onNew}>
+        <Link to={`/struk/${tx.id}`} className="btn btn-ghost btn-block">
+          Lihat / cetak struk
+        </Link>
+        <button
+          className="btn btn-primary btn-block"
+          onClick={onNew}
+          style={{ marginTop: "0.6rem" }}
+        >
           Transaksi baru
         </button>
       </div>

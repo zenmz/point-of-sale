@@ -50,6 +50,9 @@ type Item struct {
 type Transaction struct {
 	ID             string    `json:"id"`
 	StoreID        string    `json:"store_id"`
+	StoreName      string    `json:"store_name"`
+	StoreAddress   *string   `json:"store_address"`
+	StorePhone     *string   `json:"store_phone"`
 	CashierID      *string   `json:"cashier_id"`
 	CashierName    *string   `json:"cashier_name"`
 	Number         int64     `json:"number"`
