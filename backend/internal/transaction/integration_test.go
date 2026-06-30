@@ -116,6 +116,30 @@ func TestCheckoutOversellRejected(t *testing.T) {
 	}
 }
 
+// Dua baris produk yang sama (mis. varian berbeda) yang gabungannya melebihi
+// stok harus ditolak InsufficientStockError, bukan melewati cek lalu kena CHECK.
+func TestCheckoutCombinedOversellSameProduct(t *testing.T) {
+	pool := setupDB(t)
+	repo := NewRepository(pool)
+	storeID, productID := seed(t, pool, 5000, 5)
+
+	_, err := repo.Create(context.Background(), CreateInput{
+		StoreID: storeID,
+		Items: []ItemInput{
+			{ProductID: productID, Qty: 3},
+			{ProductID: productID, Qty: 3}, // 3+3 = 6 > stok 5
+		},
+		Method: Tunai, PaidAmount: 100000, ClientID: "44444444-4444-4444-4444-444444444444",
+	})
+	var insufficient *InsufficientStockError
+	if err == nil || !errors.As(err, &insufficient) {
+		t.Fatalf("gabungan oversell harusnya InsufficientStockError, dapat: %v", err)
+	}
+	if got := stockOf(t, pool, productID); got != 5 {
+		t.Fatalf("stok tak boleh berubah: %d (mau 5)", got)
+	}
+}
+
 func TestCheckoutPromoApplied(t *testing.T) {
 	pool := setupDB(t)
 	repo := NewRepository(pool)

@@ -34,6 +34,9 @@ type rowQuerier interface {
 // harga varian bila varian dipilih & punya harga. Dipakai bersama Create & Quote
 // agar harga pratinjau == harga checkout. Stok tetap di level produk.
 func resolveLine(ctx context.Context, q rowQuerier, storeID string, it ItemInput) (name string, price int64, variantID *string, err error) {
+	if it.ProductID == "" {
+		return "", 0, nil, ErrProductNotFound
+	}
 	err = q.QueryRow(ctx,
 		`SELECT name, price FROM products WHERE id = $1 AND store_id = $2 AND is_active = TRUE`,
 		it.ProductID, storeID).Scan(&name, &price)
@@ -176,6 +179,10 @@ func (r *Repository) Create(ctx context.Context, in CreateInput) (*Transaction, 
 
 	items := make([]Item, 0, len(in.Items))
 	var subtotal int64
+	// Stok di level produk: satu produk bisa muncul di beberapa baris (varian
+	// berbeda). Akumulasi qty diminta per produk agar gabungan tak melebihi stok
+	// (cek & pengurangan stok ada di dua loop terpisah).
+	reserved := make(map[string]int64, len(in.Items))
 	for _, it := range in.Items {
 		if it.Qty <= 0 {
 			return nil, ErrInvalidQty
@@ -194,8 +201,9 @@ func (r *Repository) Create(ctx context.Context, in CreateInput) (*Transaction, 
 		if err != nil && !errors.Is(err, pgx.ErrNoRows) {
 			return nil, err
 		}
-		if stock < it.Qty {
-			return nil, &InsufficientStockError{Name: name, Available: stock, Requested: it.Qty}
+		reserved[it.ProductID] += it.Qty
+		if stock < reserved[it.ProductID] {
+			return nil, &InsufficientStockError{Name: name, Available: stock, Requested: reserved[it.ProductID]}
 		}
 
 		lineSubtotal := price * it.Qty

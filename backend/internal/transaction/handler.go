@@ -4,6 +4,7 @@ import (
 	"errors"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/jackc/pgx/v5/pgconn"
 
 	"github.com/mzpos/backend/internal/auth"
 )
@@ -105,6 +106,11 @@ func (h *Handler) get(c *fiber.Ctx) error {
 
 func mapErr(err error) error {
 	var insufficient *InsufficientStockError
+	// id (uuid) tak valid dari klien → 400, jangan bocorkan error SQL mentah.
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == "22P02" {
+		return fiber.NewError(fiber.StatusBadRequest, "id tidak valid")
+	}
 	switch {
 	case errors.As(err, &insufficient):
 		return fiber.NewError(fiber.StatusConflict, err.Error())
