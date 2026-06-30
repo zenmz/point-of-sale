@@ -16,9 +16,18 @@ type DailySales struct {
 	Total   int64  `json:"total"`
 }
 
+// StoreSales = total penjualan per cabang (untuk laporan gabungan lintas toko).
+type StoreSales struct {
+	StoreID   string `json:"store_id"`
+	StoreName string `json:"store_name"`
+	TxCount   int64  `json:"tx_count"`
+	Total     int64  `json:"total"`
+}
+
 type SalesReport struct {
 	Summary SalesSummary `json:"summary"`
 	Daily   []DailySales `json:"daily"`
+	ByStore []StoreSales `json:"by_store"`
 }
 
 // TopProduct = produk terlaris (berdasar qty terjual).

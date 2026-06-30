@@ -15,13 +15,18 @@ func NewRepository(db *pgxpool.Pool) *Repository {
 	return &Repository{db: db}
 }
 
-// Sales mengembalikan ringkasan + rincian harian pada [from, to) (to eksklusif).
-func (r *Repository) Sales(ctx context.Context, storeID string, from, to time.Time) (*SalesReport, error) {
+// storeID *string: nil = semua cabang (laporan gabungan), non-nil = satu cabang.
+// Filter SQL: ($1::uuid IS NULL OR <kolom store> = $1).
+
+// Sales mengembalikan ringkasan + rincian harian + rincian per cabang pada
+// [from, to) (to eksklusif). storeID nil = agregasi lintas cabang.
+func (r *Repository) Sales(ctx context.Context, storeID *string, from, to time.Time) (*SalesReport, error) {
 	var s SalesSummary
 	err := r.db.QueryRow(ctx,
 		`SELECT COALESCE(SUM(total),0), COUNT(*), COALESCE(SUM(discount),0), COALESCE(SUM(tax),0)
 		 FROM transactions
-		 WHERE store_id = $1 AND status = 'selesai' AND created_at >= $2 AND created_at < $3`,
+		 WHERE ($1::uuid IS NULL OR store_id = $1)
+		   AND status = 'selesai' AND created_at >= $2 AND created_at < $3`,
 		storeID, from, to).Scan(&s.TotalSales, &s.TxCount, &s.TotalDiscount, &s.TotalTax)
 	if err != nil {
 		return nil, err
@@ -34,7 +39,8 @@ func (r *Repository) Sales(ctx context.Context, storeID string, from, to time.Ti
 		`SELECT to_char(date_trunc('day', created_at), 'YYYY-MM-DD') AS d,
 		        COUNT(*), COALESCE(SUM(total),0)
 		 FROM transactions
-		 WHERE store_id = $1 AND status = 'selesai' AND created_at >= $2 AND created_at < $3
+		 WHERE ($1::uuid IS NULL OR store_id = $1)
+		   AND status = 'selesai' AND created_at >= $2 AND created_at < $3
 		 GROUP BY d ORDER BY d`,
 		storeID, from, to)
 	if err != nil {
@@ -53,16 +59,49 @@ func (r *Repository) Sales(ctx context.Context, storeID string, from, to time.Ti
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-	return &SalesReport{Summary: s, Daily: daily}, nil
+
+	byStore, err := r.salesByStore(ctx, storeID, from, to)
+	if err != nil {
+		return nil, err
+	}
+	return &SalesReport{Summary: s, Daily: daily, ByStore: byStore}, nil
+}
+
+// salesByStore mengembalikan total penjualan per cabang pada rentang.
+func (r *Repository) salesByStore(ctx context.Context, storeID *string, from, to time.Time) ([]StoreSales, error) {
+	rows, err := r.db.Query(ctx,
+		`SELECT t.store_id, s.name, COUNT(*), COALESCE(SUM(t.total),0)
+		 FROM transactions t
+		 JOIN stores s ON s.id = t.store_id
+		 WHERE ($1::uuid IS NULL OR t.store_id = $1)
+		   AND t.status = 'selesai' AND t.created_at >= $2 AND t.created_at < $3
+		 GROUP BY t.store_id, s.name
+		 ORDER BY SUM(t.total) DESC`,
+		storeID, from, to)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	out := []StoreSales{}
+	for rows.Next() {
+		var ss StoreSales
+		if err := rows.Scan(&ss.StoreID, &ss.StoreName, &ss.TxCount, &ss.Total); err != nil {
+			return nil, err
+		}
+		out = append(out, ss)
+	}
+	return out, rows.Err()
 }
 
 // TopProducts mengembalikan produk terlaris (qty terbanyak) pada rentang.
-func (r *Repository) TopProducts(ctx context.Context, storeID string, from, to time.Time, limit int) ([]TopProduct, error) {
+func (r *Repository) TopProducts(ctx context.Context, storeID *string, from, to time.Time, limit int) ([]TopProduct, error) {
 	rows, err := r.db.Query(ctx,
 		`SELECT ti.product_id, ti.name, SUM(ti.qty), SUM(ti.line_total)
 		 FROM transaction_items ti
 		 JOIN transactions t ON t.id = ti.transaction_id
-		 WHERE t.store_id = $1 AND t.status = 'selesai' AND t.created_at >= $2 AND t.created_at < $3
+		 WHERE ($1::uuid IS NULL OR t.store_id = $1)
+		   AND t.status = 'selesai' AND t.created_at >= $2 AND t.created_at < $3
 		 GROUP BY ti.product_id, ti.name
 		 ORDER BY SUM(ti.qty) DESC, SUM(ti.line_total) DESC
 		 LIMIT $4`,
@@ -84,12 +123,13 @@ func (r *Repository) TopProducts(ctx context.Context, storeID string, from, to t
 }
 
 // PaymentMethods mengembalikan ringkasan per metode bayar (nilai bersih).
-func (r *Repository) PaymentMethods(ctx context.Context, storeID string, from, to time.Time) ([]PaymentBreakdown, error) {
+func (r *Repository) PaymentMethods(ctx context.Context, storeID *string, from, to time.Time) ([]PaymentBreakdown, error) {
 	rows, err := r.db.Query(ctx,
 		`SELECT p.method, COUNT(*), COALESCE(SUM(p.amount - p.change_amount),0)
 		 FROM payments p
 		 JOIN transactions t ON t.id = p.transaction_id
-		 WHERE t.store_id = $1 AND t.status = 'selesai' AND t.created_at >= $2 AND t.created_at < $3
+		 WHERE ($1::uuid IS NULL OR t.store_id = $1)
+		   AND t.status = 'selesai' AND t.created_at >= $2 AND t.created_at < $3
 		 GROUP BY p.method
 		 ORDER BY SUM(p.amount - p.change_amount) DESC`,
 		storeID, from, to)

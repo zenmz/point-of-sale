@@ -12,9 +12,17 @@ export interface DailySales {
   total: number;
 }
 
+export interface StoreSales {
+  store_id: string;
+  store_name: string;
+  tx_count: number;
+  total: number;
+}
+
 export interface SalesReport {
   summary: SalesSummary;
   daily: DailySales[];
+  by_store: StoreSales[];
 }
 
 export interface TopProduct {

@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import * as reportApi from "../../api/report";
+import * as storeApi from "../../api/store";
 import { ApiError } from "../../api/client";
+import { useAuth } from "../../hooks/useAuth";
 import { formatRupiah } from "../../lib/format";
 import type { PaymentBreakdown, SalesReport, TopProduct } from "../../types/report";
+import type { Store } from "../../types/store";
 
 const METHOD_LABEL: Record<string, string> = {
   tunai: "Tunai",
@@ -38,22 +41,36 @@ const PRESETS = [
 ];
 
 export function LaporanPage() {
+  const { user } = useAuth();
+  const isOwner = user?.role === "owner";
+
   const [from, setFrom] = useState(daysAgo(6));
   const [to, setTo] = useState(toYMD(new Date()));
+  const [storeFilter, setStoreFilter] = useState(""); // "" = semua cabang
+  const [stores, setStores] = useState<Store[]>([]);
   const [sales, setSales] = useState<SalesReport | null>(null);
   const [top, setTop] = useState<TopProduct[]>([]);
   const [pay, setPay] = useState<PaymentBreakdown[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async (f: string, t: string) => {
+  useEffect(() => {
+    if (!isOwner) return;
+    storeApi
+      .listStores()
+      .then(setStores)
+      .catch(() => setStores([]));
+  }, [isOwner]);
+
+  const load = useCallback(async (f: string, t: string, store: string) => {
     setLoading(true);
     setError(null);
     try {
+      const sid = store || undefined;
       const [s, tp, pm] = await Promise.all([
-        reportApi.salesReport(f, t),
-        reportApi.topProducts(f, t),
-        reportApi.paymentMethods(f, t),
+        reportApi.salesReport(f, t, sid),
+        reportApi.topProducts(f, t, sid),
+        reportApi.paymentMethods(f, t, sid),
       ]);
       setSales(s);
       setTop(tp);
@@ -66,9 +83,9 @@ export function LaporanPage() {
   }, []);
 
   useEffect(() => {
-    const t = setTimeout(() => load(from, to), 150);
+    const t = setTimeout(() => load(from, to, storeFilter), 150);
     return () => clearTimeout(t);
-  }, [from, to, load]);
+  }, [from, to, storeFilter, load]);
 
   const maxDaily = Math.max(1, ...(sales?.daily.map((d) => d.total) ?? [0]));
   const summary = sales?.summary;
@@ -79,12 +96,31 @@ export function LaporanPage() {
         <div>
           <h1>Laporan</h1>
           <p className="muted" style={{ marginTop: 4 }}>
-            Ringkasan penjualan & performa toko.
+            {isOwner && !storeFilter
+              ? "Ringkasan penjualan gabungan semua cabang."
+              : "Ringkasan penjualan & performa toko."}
           </p>
         </div>
       </div>
 
       <div className="card report-filter">
+        {isOwner && (
+          <label className="field">
+            Cabang
+            <select
+              className="input"
+              value={storeFilter}
+              onChange={(e) => setStoreFilter(e.target.value)}
+            >
+              <option value="">Semua cabang</option>
+              {stores.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <div className="seg">
           {PRESETS.map((p) => (
             <button
@@ -145,6 +181,30 @@ export function LaporanPage() {
               <div className="stat-value money">{formatRupiah(summary?.total_discount ?? 0)}</div>
             </div>
           </div>
+
+          {isOwner && (sales?.by_store.length ?? 0) > 1 && (
+            <div className="card" style={{ padding: 0 }}>
+              <div className="card-head">Per cabang</div>
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Cabang</th>
+                    <th className="center">Transaksi</th>
+                    <th className="num">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sales?.by_store.map((s) => (
+                    <tr key={s.store_id}>
+                      <td style={{ fontWeight: 500 }}>{s.store_name}</td>
+                      <td className="center">{s.tx_count}</td>
+                      <td className="num money">{formatRupiah(s.total)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
 
           <div className="report-cols">
             <div className="card" style={{ padding: 0 }}>

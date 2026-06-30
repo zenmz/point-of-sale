@@ -58,12 +58,27 @@ func dateRange(c *fiber.Ctx) (time.Time, time.Time, error) {
 	return from, toExclusive, nil
 }
 
+// reportScope menentukan cabang laporan. Owner boleh memilih cabang lewat
+// ?store_id= (kosong atau "all" = semua cabang / laporan gabungan). Non-owner
+// terkunci ke cabangnya sendiri.
+func reportScope(c *fiber.Ctx) *string {
+	if auth.Role(c) == "owner" {
+		v := c.Query("store_id")
+		if v == "" || v == "all" {
+			return nil
+		}
+		return &v
+	}
+	s := auth.StoreID(c)
+	return &s
+}
+
 func (h *Handler) sales(c *fiber.Ctx) error {
 	from, to, err := dateRange(c)
 	if err != nil {
 		return err
 	}
-	rep, err := h.repo.Sales(c.Context(), auth.StoreID(c), from, to)
+	rep, err := h.repo.Sales(c.Context(), reportScope(c), from, to)
 	if err != nil {
 		return err
 	}
@@ -79,7 +94,7 @@ func (h *Handler) topProducts(c *fiber.Ctx) error {
 	if limit < 1 || limit > 100 {
 		limit = 10
 	}
-	items, err := h.repo.TopProducts(c.Context(), auth.StoreID(c), from, to, limit)
+	items, err := h.repo.TopProducts(c.Context(), reportScope(c), from, to, limit)
 	if err != nil {
 		return err
 	}
@@ -91,7 +106,7 @@ func (h *Handler) paymentMethods(c *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-	out, err := h.repo.PaymentMethods(c.Context(), auth.StoreID(c), from, to)
+	out, err := h.repo.PaymentMethods(c.Context(), reportScope(c), from, to)
 	if err != nil {
 		return err
 	}

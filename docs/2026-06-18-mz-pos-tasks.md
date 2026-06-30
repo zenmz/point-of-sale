@@ -197,9 +197,16 @@ Legenda: `[BE]` backend Go · `[FE]` frontend React · `[DB]` skema database · 
 > default per-toko (kosong). **Uji live:** salin katalog A→C (baris independen),
 > switch re-scope produk, kasir/admin lintas-cabang ditolak 403.
 
-### M2.4 — Laporan Gabungan
-- [ ] `[BE]` Agregasi laporan lintas cabang
-- [ ] `[FE]` Filter laporan per toko / semua toko
+### M2.4 — Laporan Gabungan ✅
+- [x] `[BE]` Agregasi laporan lintas cabang
+- [x] `[FE]` Filter laporan per toko / semua toko
+
+> Catatan: laporan kini menerima `?store_id=` (owner). Kosong/"all" = agregasi
+> semua cabang; non-owner terkunci ke cabangnya (`reportScope`). Query pakai
+> filter opsional `($1::uuid IS NULL OR store_id = $1)`. `/reports/sales`
+> menambah rincian `by_store` (total per cabang). FE: dropdown cabang (owner) +
+> tabel "Per cabang" saat >1 cabang. **Uji live:** 2 nota di Toko A & C →
+> gabungan 126rb (A 36rb + C 90rb), metode bayar tergabung, filter A isolasi benar.
 
 ### M2.5 — Transfer Stok & Opname
 - [ ] `[DB]` Tabel `stock_transfers`
