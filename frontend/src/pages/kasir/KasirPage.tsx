@@ -3,8 +3,9 @@ import { Link } from "react-router-dom";
 import * as txApi from "../../api/transaction";
 import { ApiError } from "../../api/client";
 import { loadProducts } from "../../offline/catalogCache";
-import { countPending, enqueue, newClientId } from "../../offline/txQueue";
+import { enqueue, newClientId } from "../../offline/txQueue";
 import { useOnline } from "../../hooks/useOnline";
+import { useSync } from "../../hooks/useSync";
 import { formatRupiah } from "../../lib/format";
 import { IconPlus } from "../../components/icons";
 import type { Product } from "../../types/catalog";
@@ -21,6 +22,7 @@ const METHOD_LABEL: Record<PaymentMethod, string> = {
 
 export function KasirPage() {
   const online = useOnline();
+  const { pending, refresh: refreshSync, sync: syncNow } = useSync();
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -36,12 +38,7 @@ export function KasirPage() {
   const [offlineSale, setOfflineSale] = useState<{ total: number; method: PaymentMethod } | null>(
     null,
   );
-  const [pending, setPending] = useState(0);
   const [paying, setPaying] = useState(false);
-
-  useEffect(() => {
-    countPending().then(setPending);
-  }, []);
 
   const load = useCallback(async (q: string) => {
     setLoading(true);
@@ -135,7 +132,8 @@ export function KasirPage() {
     // Offline: simpan ke antrian lokal (idempoten saat sinkron nanti).
     try {
       await enqueue(payload, totals.total);
-      setPending(await countPending());
+      await refreshSync();
+      void syncNow(); // coba kirim segera bila ternyata masih online
       finishSale();
       setOfflineSale({ total: totals.total, method });
     } catch {

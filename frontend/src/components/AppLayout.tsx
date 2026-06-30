@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { ShiftWidget } from "./ShiftWidget";
 import { OfflineBadge } from "./OfflineBadge";
+import { SyncWidget } from "./SyncWidget";
 import { IconHome, IconCart, IconBox, IconLayers, IconChart, IconLogout, IconMenu } from "./icons";
 import type { ComponentType } from "react";
 import "./AppLayout.css";
@@ -88,6 +89,7 @@ export function AppLayout() {
 
           <div className="topbar-right">
             <OfflineBadge />
+            <SyncWidget />
             <ShiftWidget />
             <div className="user-box">
               <div className="user-name">{user?.name}</div>

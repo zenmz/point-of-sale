@@ -422,6 +422,24 @@ select.input {
   margin: 0;
 }
 
+/* Panel sinkronisasi */
+.sync-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.sync-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  padding: 0.55rem 0.7rem;
+}
+
 /* Chip shift (klikable) di topbar */
 .shift-chip {
   border: none;

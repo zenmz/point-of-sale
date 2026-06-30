@@ -166,11 +166,18 @@ Legenda: `[BE]` backend Go · `[FE]` frontend React · `[DB]` skema database · 
 > Offline: payment modal jalan penuh, transaksi masuk antrian Dexie (tabel
 > pendingTx, status pending) + layar sukses offline. Auto-sync/retry = M2.2.
 
-### M2.2 — Sync Engine
-- [ ] `[FE]` Auto-sync antrian saat online kembali
-- [ ] `[FE]` Retry transaksi gagal + backoff
-- [ ] `[FE]` Indikator status sync (pending/sukses/gagal) per transaksi
-- [ ] `[BE]` Rekonsiliasi stok + tandai konflik untuk admin
+### M2.2 — Sync Engine ✅
+- [x] `[FE]` Auto-sync antrian saat online kembali
+- [x] `[FE]` Retry transaksi gagal + backoff
+- [x] `[FE]` Indikator status sync (pending/sukses/gagal) per transaksi
+- [x] `[BE]` Rekonsiliasi stok + tandai konflik untuk admin
+
+> Catatan: SyncProvider auto-sync saat mount + event `online`; error jaringan →
+> retry backoff eksponensial (2s→30s). Konflik server (mis. stok kurang) ditandai
+> status 'error' (tidak di-retry otomatis; admin pakai "Coba lagi"). SyncWidget di
+> topbar (menyinkron/tertunda/konflik) + panel rincian antrian.
+> **Uji live:** client_id sama 2× → 1 nota, stok 5→3 (bukan 1) = idempoten;
+> oversell → HTTP 409 detail produk (rekonsiliasi stok server otoritatif).
 
 ### M2.3 — Multi-toko
 - [ ] `[DB]` Perkuat entitas `stores`; relasi user ↔ store
