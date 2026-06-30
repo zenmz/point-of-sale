@@ -11,6 +11,9 @@ import (
 
 func main() {
 	cfg := config.Load()
+	if err := cfg.Validate(); err != nil {
+		log.Fatalf("konfigurasi tidak valid: %v", err)
+	}
 
 	pool, err := database.Connect(context.Background(), cfg.DatabaseURL)
 	if err != nil {

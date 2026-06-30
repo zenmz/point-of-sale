@@ -236,11 +236,19 @@ func (r *Repository) Create(ctx context.Context, in CreateInput) (*Transaction, 
 	// Diskon nota, promo, pajak/service, total — lewat helper bersama.
 	ft := finalize(subtotal, in.Discount, in.TaxPercent, in.ServicePercent, promoDisc)
 
-	// Pembayaran wajib menutup total. Kembalian hanya relevan untuk tunai.
+	// Pembayaran wajib menutup total.
 	if in.PaidAmount < ft.Total {
 		return nil, ErrPaymentShort
 	}
+	// Kembalian hanya untuk tunai. Non-tunai (qris/ewallet/transfer) bayar PAS:
+	// catat amount = total, change = 0 (abaikan kelebihan dari klien) agar rekap
+	// non-tunai tak ter-inflasi oleh "kembalian" semu.
+	paidAmount := in.PaidAmount
 	change := in.PaidAmount - ft.Total
+	if in.Method != Tunai {
+		paidAmount = ft.Total
+		change = 0
+	}
 
 	// Nomor nota berikutnya (aman di bawah advisory lock).
 	var number int64
@@ -333,7 +341,7 @@ func (r *Repository) Create(ctx context.Context, in CreateInput) (*Transaction, 
 	if _, err := tx.Exec(ctx,
 		`INSERT INTO payments (transaction_id, store_id, method, amount, change_amount)
 		 VALUES ($1,$2,$3,$4,$5)`,
-		txID, in.StoreID, in.Method, in.PaidAmount, change); err != nil {
+		txID, in.StoreID, in.Method, paidAmount, change); err != nil {
 		return nil, err
 	}
 

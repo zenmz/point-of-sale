@@ -45,8 +45,11 @@ services:
       APP_PORT: "8080"
       APP_ENV: production
       DATABASE_URL: postgres://mzpos:${DB_PASSWORD:-mzpos}@db:5432/mzpos?sslmode=disable
-      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
-      JWT_EXPIRY_HOURS: "24"
+      # WAJIB di produksi: JWT_SECRET (>=16 char, bukan default) & CORS_ORIGINS.
+      # App menolak start bila tak diisi.
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
+      JWT_EXPIRY_HOURS: "12"
+      CORS_ORIGINS: ${CORS_ORIGINS:?set CORS_ORIGINS (mis. https://app.contoh.com)}
     restart: unless-stopped
 
   frontend:

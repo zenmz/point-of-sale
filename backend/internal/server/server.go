@@ -1,6 +1,8 @@
 package server
 
 import (
+	"log"
+
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -36,7 +38,12 @@ func New(cfg *config.Config, db *pgxpool.Pool) *Server {
 
 	app.Use(recover.New())
 	app.Use(logger.New())
-	app.Use(cors.New())
+	// CORS: di produksi batasi ke origin terdaftar (CORS_ORIGINS); dev = semua.
+	corsCfg := cors.Config{}
+	if cfg.CORSOrigins != "" {
+		corsCfg.AllowOrigins = cfg.CORSOrigins
+	}
+	app.Use(cors.New(corsCfg))
 
 	s := &Server{App: app, cfg: cfg, db: db}
 	s.registerRoutes()
@@ -85,13 +92,18 @@ func (s *Server) registerRoutes() {
 	analytics.NewHandler(analytics.NewRepository(s.db), tokens).Register(api)
 }
 
-// errorHandler menyeragamkan format respons error.
+// errorHandler menyeragamkan format respons error. Untuk 5xx, pesan internal
+// (mis. error DB) DICATAT di server tapi TIDAK dibocorkan ke klien (cegah
+// penyingkapan skema/SQL); klien hanya menerima pesan generik.
 func errorHandler(c *fiber.Ctx, err error) error {
 	code := fiber.StatusInternalServerError
+	msg := err.Error()
 	if e, ok := err.(*fiber.Error); ok {
 		code = e.Code
 	}
-	return c.Status(code).JSON(fiber.Map{
-		"error": err.Error(),
-	})
+	if code >= fiber.StatusInternalServerError {
+		log.Printf("internal error %s %s: %v", c.Method(), c.Path(), err)
+		msg = "terjadi kesalahan internal"
+	}
+	return c.Status(code).JSON(fiber.Map{"error": msg})
 }

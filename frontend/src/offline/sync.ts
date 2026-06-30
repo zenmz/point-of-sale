@@ -27,13 +27,21 @@ export async function syncPending(onProgress?: () => void): Promise<SyncResult> 
         await removePending(it.client_id);
         res.synced++;
       } catch (err) {
-        if (err instanceof ApiError) {
-          await db.pendingTx.update(it.client_id, { status: "error", error: err.message });
-          res.failed++;
-        } else {
+        // Hanya error klien/validasi (4xx, mis. stok kurang/konflik) yang
+        // ditandai 'error' (tak di-retry otomatis; admin perbaiki manual). Error
+        // server sementara (5xx/408/429) & putus jaringan → tetap 'pending' agar
+        // dicoba lagi (cegah nota sah hangus karena restart server sesaat).
+        const retryable =
+          !(err instanceof ApiError) ||
+          err.status >= 500 ||
+          err.status === 408 ||
+          err.status === 429;
+        if (retryable) {
           res.stoppedOffline = true;
           break;
         }
+        await db.pendingTx.update(it.client_id, { status: "error", error: (err as ApiError).message });
+        res.failed++;
       }
       onProgress?.();
     }

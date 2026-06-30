@@ -55,13 +55,17 @@ cd frontend && npm install && npm run dev
 Seluruh stack (db + migrasi + backend + frontend/nginx) lewat satu compose:
 
 ```bash
-JWT_SECRET=ganti-rahasia docker compose -f docker-compose.prod.yml up -d --build
+JWT_SECRET=ganti-rahasia-min-16-karakter \
+  CORS_ORIGINS=https://app.contoh.com \
+  docker compose -f docker-compose.prod.yml up -d --build
 # Buka http://localhost:8080
 ```
 
 - `migrate` menjalankan migrasi DB sebelum backend start.
 - `frontend` (nginx) menyajikan PWA & mem-proxy `/api` ke backend (satu origin).
-- Atur `JWT_SECRET` dan `DB_PASSWORD` lewat environment di server.
+- Atur `JWT_SECRET`, `CORS_ORIGINS`, dan `DB_PASSWORD` lewat environment.
+- **Produksi menolak start** bila `JWT_SECRET` masih default/lemah atau
+  `CORS_ORIGINS` kosong (proteksi token-forgery & CORS terbuka).
 
 PWA installable (manifest + service worker `frontend/public/sw.js`) dengan
 sinkronisasi transaksi offline penuh (Fase 2). Status pengerjaan per milestone:

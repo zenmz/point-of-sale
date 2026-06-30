@@ -1,11 +1,17 @@
 package auth
 
 import (
+	"net/mail"
 	"strings"
 	"time"
 
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/limiter"
 )
+
+// dummyHash menyamakan waktu verifikasi saat email tak ada (cegah enumerasi
+// lewat selisih waktu argon2). Dihitung sekali saat start.
+var dummyHash, _ = HashPassword("timing-equalizer-bukan-password-asli")
 
 // Handler menangani endpoint autentikasi.
 type Handler struct {
@@ -20,11 +26,23 @@ func NewHandler(repo *Repository, tokens *TokenManager) *Handler {
 // Register mendaftarkan route auth di group yang diberikan.
 func (h *Handler) Register(r fiber.Router) {
 	g := r.Group("/auth")
-	g.Post("/register", h.register)
-	g.Post("/login", h.login)
+	g.Post("/register", h.loginRate(), h.register)
+	g.Post("/login", h.loginRate(), h.login)
 
 	// Manajemen toko & pengguna (multi-toko).
 	h.registerManagement(r)
+}
+
+// loginRate membatasi percobaan login/register per IP (anti brute-force):
+// maks 15 permintaan / menit. Mengembalikan 429 bila terlampaui.
+func (h *Handler) loginRate() fiber.Handler {
+	return limiter.New(limiter.Config{
+		Max:        15,
+		Expiration: time.Minute,
+		LimitReached: func(c *fiber.Ctx) error {
+			return fiber.NewError(fiber.StatusTooManyRequests, "terlalu banyak percobaan, coba lagi nanti")
+		},
+	})
 }
 
 type registerReq struct {
@@ -50,6 +68,9 @@ func (h *Handler) register(c *fiber.Ctx) error {
 	req.Email = strings.TrimSpace(strings.ToLower(req.Email))
 	if req.Email == "" || req.Password == "" || req.Name == "" || req.StoreName == "" {
 		return fiber.NewError(fiber.StatusBadRequest, "store_name, name, email, password wajib diisi")
+	}
+	if _, err := mail.ParseAddress(req.Email); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "format email tidak valid")
 	}
 	if len(req.Password) < 8 {
 		return fiber.NewError(fiber.StatusBadRequest, "password minimal 8 karakter")
@@ -105,7 +126,9 @@ func (h *Handler) login(c *fiber.Ctx) error {
 
 	user, err := h.repo.GetUserByEmail(c.Context(), req.Email)
 	if err != nil {
-		// Samakan pesan untuk email tidak ada vs password salah (cegah enumerasi).
+		// Email tak ada: tetap jalankan verifikasi dummy agar waktu respons sama
+		// (cegah enumerasi via timing). Pesan disamakan dgn password salah.
+		_, _ = VerifyPassword(req.Password, dummyHash)
 		return fiber.NewError(fiber.StatusUnauthorized, "email atau password salah")
 	}
 	if !user.IsActive {
