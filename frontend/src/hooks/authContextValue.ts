@@ -6,6 +6,7 @@ export interface AuthState {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
   register: (input: RegisterInput) => Promise<void>;
+  switchStore: (storeId: string) => Promise<void>;
   logout: () => void;
 }
 

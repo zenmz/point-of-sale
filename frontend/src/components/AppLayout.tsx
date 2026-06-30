@@ -4,7 +4,17 @@ import { useAuth } from "../hooks/useAuth";
 import { ShiftWidget } from "./ShiftWidget";
 import { OfflineBadge } from "./OfflineBadge";
 import { SyncWidget } from "./SyncWidget";
-import { IconHome, IconCart, IconBox, IconLayers, IconChart, IconLogout, IconMenu } from "./icons";
+import { StoreSwitcher } from "./StoreSwitcher";
+import {
+  IconHome,
+  IconCart,
+  IconBox,
+  IconLayers,
+  IconChart,
+  IconUsers,
+  IconLogout,
+  IconMenu,
+} from "./icons";
 import type { ComponentType } from "react";
 import "./AppLayout.css";
 
@@ -23,6 +33,7 @@ const NAV: NavConf[] = [
   { to: "/products", label: "Produk", icon: IconBox },
   { to: "/stok", label: "Stok", icon: IconLayers },
   { to: "/laporan", label: "Laporan", icon: IconChart, adminOnly: true },
+  { to: "/pengaturan", label: "Pengaturan", icon: IconUsers, adminOnly: true },
 ];
 
 export function AppLayout() {
@@ -89,6 +100,7 @@ export function AppLayout() {
 
           <div className="topbar-right">
             <OfflineBadge />
+            <StoreSwitcher />
             <SyncWidget />
             <ShiftWidget />
             <div className="user-box">

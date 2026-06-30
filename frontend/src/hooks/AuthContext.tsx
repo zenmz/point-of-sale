@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from "react";
 import { getToken, setToken } from "../api/client";
 import * as authApi from "../api/auth";
+import * as storeApi from "../api/store";
 import type { AuthResponse, User } from "../types/auth";
 import { AuthCtx } from "./authContextValue";
 
@@ -37,11 +38,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     persist(await authApi.register(input));
   }
 
+  // switchStore (owner): tukar konteks ke cabang lain. Token baru disimpan lalu
+  // halaman dimuat ulang agar semua data ter-scope ke cabang yang dipilih.
+  async function switchStore(storeId: string) {
+    persist(await storeApi.switchStore(storeId));
+    window.location.assign("/");
+  }
+
   function logout() {
     setToken(null);
     localStorage.removeItem(USER_KEY);
     setUser(null);
   }
 
-  return <AuthCtx.Provider value={{ user, login, register, logout }}>{children}</AuthCtx.Provider>;
+  return (
+    <AuthCtx.Provider value={{ user, login, register, switchStore, logout }}>
+      {children}
+    </AuthCtx.Provider>
+  );
 }

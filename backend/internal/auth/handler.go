@@ -22,6 +22,9 @@ func (h *Handler) Register(r fiber.Router) {
 	g := r.Group("/auth")
 	g.Post("/register", h.register)
 	g.Post("/login", h.login)
+
+	// Manajemen toko & pengguna (multi-toko).
+	h.registerManagement(r)
 }
 
 type registerReq struct {
@@ -36,7 +39,7 @@ type authResp struct {
 	User  *User  `json:"user"`
 }
 
-// register membuat admin pertama beserta toko-nya.
+// register membuat owner pertama (pemilik usaha) beserta toko pertamanya.
 // Dibatasi: hanya boleh saat belum ada user sama sekali (bootstrap).
 func (h *Handler) register(c *fiber.Ctx) error {
 	var req registerReq
@@ -70,12 +73,13 @@ func (h *Handler) register(c *fiber.Ctx) error {
 		return err
 	}
 
+	// User pertama = owner (pemilik usaha), yang lalu menyiapkan cabang & staf.
 	user, err := h.repo.CreateUser(c.Context(), &User{
 		StoreID:      storeID,
 		Name:         req.Name,
 		Email:        req.Email,
 		PasswordHash: hash,
-		Role:         "admin",
+		Role:         "owner",
 	})
 	if err != nil {
 		if err == ErrEmailTaken {

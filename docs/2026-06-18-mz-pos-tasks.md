@@ -179,12 +179,23 @@ Legenda: `[BE]` backend Go · `[FE]` frontend React · `[DB]` skema database · 
 > **Uji live:** client_id sama 2× → 1 nota, stok 5→3 (bukan 1) = idempoten;
 > oversell → HTTP 409 detail produk (rekonsiliasi stok server otoritatif).
 
-### M2.3 — Multi-toko
-- [ ] `[DB]` Perkuat entitas `stores`; relasi user ↔ store
-- [ ] `[BE]` Scope data per store (produk, stok, transaksi)
-- [ ] `[BE]` Manajemen user per cabang (role Owner)
-- [ ] `[FE]` Switcher cabang + manajemen user antar cabang
-- [ ] `[FE]` Katalog bersama vs per-toko
+### M2.3 — Multi-toko ✅
+- [x] `[DB]` Perkuat entitas `stores`; relasi user ↔ store
+- [x] `[BE]` Scope data per store (produk, stok, transaksi)
+- [x] `[BE]` Manajemen user per cabang (role Owner)
+- [x] `[FE]` Switcher cabang + manajemen user antar cabang
+- [x] `[FE]` Katalog bersama vs per-toko
+
+> Catatan: skema sudah multi-toko sejak M1.0 (semua entitas ber-`store_id`),
+> scoping data otomatis dari `store_id` di JWT — tak perlu migrasi baru.
+> **User pertama (bootstrap register) kini `owner`** (pemilik usaha), bukan admin.
+> Owner: lintas cabang. Switcher = terbitkan ulang JWT untuk cabang tujuan
+> (`POST /stores/:id/switch`), semua query ikut `store_id` token baru. Manajemen
+> toko (`/stores`) khusus owner; manajemen pengguna (`/users`) owner (semua
+> cabang) / admin (cabang sendiri, tak boleh role owner). "Katalog bersama" =
+> opsi **salin katalog** (kategori+produk+varian, stok tidak) saat buat cabang;
+> default per-toko (kosong). **Uji live:** salin katalog A→C (baris independen),
+> switch re-scope produk, kasir/admin lintas-cabang ditolak 403.
 
 ### M2.4 — Laporan Gabungan
 - [ ] `[BE]` Agregasi laporan lintas cabang
