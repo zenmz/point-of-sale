@@ -228,10 +228,20 @@ Legenda: `[BE]` backend Go · `[FE]` frontend React · `[DB]` skema database · 
 
 ## FASE 3 — Lanjutan
 
-### M3.1 — CRM / Member
-- [ ] `[DB]` Tabel `customers`, `loyalty_points`
-- [ ] `[BE]` CRUD member + akumulasi/penukaran poin
-- [ ] `[FE]` Pilih/daftar member saat transaksi + riwayat beli
+### M3.1 — CRM / Member ✅
+- [x] `[DB]` Tabel `customers`, `loyalty_points`
+- [x] `[BE]` CRUD member + akumulasi/penukaran poin
+- [x] `[FE]` Pilih/daftar member saat transaksi + riwayat beli
+
+> Catatan: tabel `customers` (saldo poin) + `loyalty_points` (buku besar) +
+> kolom `customer_id`/`points_earned` di transactions (migrasi 000009). CRUD
+> member (`/customers`, daftar/cari boleh kasir; ubah & redeem admin/owner).
+> Checkout opsional `customer_id` → poin earn = total/1000 (atomik di dalam tx
+> checkout: tambah saldo + ledger 'earn'). Redeem `POST /customers/:id/redeem`
+> (kurangi saldo + ledger, 409 bila kurang). Detail member = saldo + riwayat
+> poin + riwayat beli. FE: MemberModal (cari/daftar) di kasir, badge poin di
+> layar sukses, halaman Pelanggan (list + rincian + redeem). **Uji live:**
+> belanja Rp54rb → +54 poin, redeem 5 → saldo 49, over-redeem 409, member palsu 404.
 
 ### M3.2 — Supplier & Purchase Order
 - [ ] `[DB]` Tabel `suppliers`, `purchase_orders`, `po_items`

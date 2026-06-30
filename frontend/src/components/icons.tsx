@@ -77,6 +77,13 @@ export const IconMenu = (p: IconProps) => (
   </svg>
 );
 
+export const IconUser = (p: IconProps) => (
+  <svg {...base(p)}>
+    <circle cx="12" cy="8" r="3.5" />
+    <path d="M5.5 20a6.5 6.5 0 0 1 13 0" />
+  </svg>
+);
+
 export const IconUsers = (p: IconProps) => (
   <svg {...base(p)}>
     <circle cx="9" cy="8" r="3.2" />

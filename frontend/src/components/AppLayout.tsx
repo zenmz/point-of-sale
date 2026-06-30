@@ -11,6 +11,7 @@ import {
   IconBox,
   IconLayers,
   IconChart,
+  IconUser,
   IconUsers,
   IconLogout,
   IconMenu,
@@ -32,6 +33,7 @@ const NAV: NavConf[] = [
   { to: "/kasir", label: "Kasir", icon: IconCart },
   { to: "/products", label: "Produk", icon: IconBox },
   { to: "/stok", label: "Stok", icon: IconLayers },
+  { to: "/pelanggan", label: "Pelanggan", icon: IconUser },
   { to: "/laporan", label: "Laporan", icon: IconChart, adminOnly: true },
   { to: "/pengaturan", label: "Pengaturan", icon: IconUsers, adminOnly: true },
 ];

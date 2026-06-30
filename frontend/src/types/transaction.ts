@@ -26,6 +26,9 @@ export interface Transaction {
   store_phone: string | null;
   cashier_id: string | null;
   cashier_name: string | null;
+  customer_id: string | null;
+  customer_name: string | null;
+  points_earned: number;
   number: number;
   subtotal: number;
   discount: number;
@@ -55,4 +58,5 @@ export interface CheckoutInput {
   method: PaymentMethod;
   paid_amount: number;
   client_id?: string; // UUID idempotensi (transaksi offline)
+  customer_id?: string; // member opsional (akumulasi poin)
 }

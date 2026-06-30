@@ -11,6 +11,7 @@ import { StockPage } from "./pages/inventory/StockPage";
 import { KasirPage } from "./pages/kasir/KasirPage";
 import { ReceiptPage } from "./pages/kasir/ReceiptPage";
 import { LaporanPage } from "./pages/laporan/LaporanPage";
+import { PelangganPage } from "./pages/pelanggan/PelangganPage";
 import { PengaturanPage } from "./pages/pengaturan/PengaturanPage";
 
 function App() {
@@ -30,6 +31,7 @@ function App() {
                 <Route path="/laporan" element={<LaporanPage />} />
                 <Route path="/products" element={<ProductsPage />} />
                 <Route path="/stok" element={<StockPage />} />
+                <Route path="/pelanggan" element={<PelangganPage />} />
                 <Route element={<ProtectedRoute roles={["admin", "owner"]} />}>
                   <Route path="/pengaturan" element={<PengaturanPage />} />
                 </Route>

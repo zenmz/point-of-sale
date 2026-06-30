@@ -34,6 +34,7 @@ type checkoutReq struct {
 	Method         Method      `json:"method"`
 	PaidAmount     int64       `json:"paid_amount"`
 	ClientID       string      `json:"client_id"`
+	CustomerID     string      `json:"customer_id"`
 }
 
 func (h *Handler) create(c *fiber.Ctx) error {
@@ -48,6 +49,7 @@ func (h *Handler) create(c *fiber.Ctx) error {
 	t, err := h.repo.Create(c.Context(), CreateInput{
 		StoreID:        auth.StoreID(c),
 		CashierID:      auth.UserID(c),
+		CustomerID:     req.CustomerID,
 		Items:          req.Items,
 		Discount:       req.Discount,
 		TaxPercent:     req.TaxPercent,
@@ -77,7 +79,8 @@ func mapErr(err error) error {
 		return fiber.NewError(fiber.StatusConflict, err.Error())
 	case errors.Is(err, ErrEmpty), errors.Is(err, ErrInvalidMethod), errors.Is(err, ErrPaymentShort):
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
-	case errors.Is(err, ErrProductNotFound), errors.Is(err, ErrNotFound):
+	case errors.Is(err, ErrProductNotFound), errors.Is(err, ErrNotFound),
+		errors.Is(err, ErrCustomerNotFound):
 		return fiber.NewError(fiber.StatusNotFound, err.Error())
 	default:
 		return err

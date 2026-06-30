@@ -10,8 +10,10 @@ import { formatRupiah } from "../../lib/format";
 import { IconPlus } from "../../components/icons";
 import type { Product } from "../../types/catalog";
 import type { PaymentMethod, Transaction } from "../../types/transaction";
+import type { Customer } from "../../types/customer";
 import { computeTotals, lineTotal, newLine, type CartLine } from "./cart";
 import { PaymentModal } from "./PaymentModal";
+import { MemberModal } from "./MemberModal";
 
 const METHOD_LABEL: Record<PaymentMethod, string> = {
   tunai: "Tunai",
@@ -28,6 +30,8 @@ export function KasirPage() {
   const [loading, setLoading] = useState(true);
 
   const [cart, setCart] = useState<CartLine[]>([]);
+  const [member, setMember] = useState<Customer | null>(null);
+  const [memberOpen, setMemberOpen] = useState(false);
   const [notaDiscount, setNotaDiscount] = useState(0);
   const [taxPercent, setTaxPercent] = useState(0);
   const [servicePercent, setServicePercent] = useState(0);
@@ -85,6 +89,7 @@ export function KasirPage() {
 
   function resetSale() {
     setCart([]);
+    setMember(null);
     setNotaDiscount(0);
     setError(null);
     setDone(null);
@@ -109,6 +114,7 @@ export function KasirPage() {
       method,
       paid_amount: paidAmount,
       client_id: newClientId(),
+      customer_id: member?.id,
     };
 
     // Online: kirim langsung. Error HTTP (mis. stok kurang) tampil ke kasir.
@@ -146,6 +152,7 @@ export function KasirPage() {
     setPaying(false);
     setBusy(false);
     setCart([]);
+    setMember(null);
     setNotaDiscount(0);
   }
 
@@ -280,6 +287,24 @@ export function KasirPage() {
 
         <hr className="tear" />
 
+        <div className="member-bar">
+          {member ? (
+            <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+              <span>
+                👤 <strong>{member.name}</strong>{" "}
+                <span className="chip chip-brand">{member.points} poin</span>
+              </span>
+              <button className="btn-link danger" onClick={() => setMember(null)}>
+                Lepas
+              </button>
+            </div>
+          ) : (
+            <button className="btn-link" onClick={() => setMemberOpen(true)} disabled={!online}>
+              + Tambahkan member {online ? "" : "(perlu online)"}
+            </button>
+          )}
+        </div>
+
         <div className="cart-config">
           <label className="field">
             Diskon nota (Rp)
@@ -365,6 +390,16 @@ export function KasirPage() {
           onConfirm={onPay}
         />
       )}
+
+      {memberOpen && (
+        <MemberModal
+          onClose={() => setMemberOpen(false)}
+          onPick={(c) => {
+            setMember(c);
+            setMemberOpen(false);
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -447,6 +482,19 @@ function SaleSuccess({ tx, onNew }: { tx: Transaction; onNew: () => void }) {
             <dt>Total</dt>
             <dd className="money">{formatRupiah(tx.total)}</dd>
           </div>
+          {tx.customer_name && (
+            <div>
+              <dt>Member</dt>
+              <dd>
+                {tx.customer_name}
+                {tx.points_earned > 0 && (
+                  <span className="chip chip-brand" style={{ marginLeft: 6 }}>
+                    +{tx.points_earned} poin
+                  </span>
+                )}
+              </dd>
+            </div>
+          )}
           {tx.payment && (
             <>
               <div>

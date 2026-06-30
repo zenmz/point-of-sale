@@ -12,11 +12,12 @@ import (
 )
 
 var (
-	ErrEmpty           = errors.New("keranjang kosong")
-	ErrProductNotFound = errors.New("produk tidak ditemukan")
-	ErrNotFound        = errors.New("transaksi tidak ditemukan")
-	ErrInvalidMethod   = errors.New("metode pembayaran tidak valid")
-	ErrPaymentShort    = errors.New("pembayaran kurang dari total")
+	ErrEmpty            = errors.New("keranjang kosong")
+	ErrProductNotFound  = errors.New("produk tidak ditemukan")
+	ErrNotFound         = errors.New("transaksi tidak ditemukan")
+	ErrInvalidMethod    = errors.New("metode pembayaran tidak valid")
+	ErrPaymentShort     = errors.New("pembayaran kurang dari total")
+	ErrCustomerNotFound = errors.New("member tidak ditemukan")
 )
 
 // InsufficientStockError menandai stok kurang untuk satu produk.
@@ -173,15 +174,34 @@ func (r *Repository) Create(ctx context.Context, in CreateInput) (*Transaction, 
 		clientID = &in.ClientID
 	}
 
+	// Member opsional: validasi milik toko ini, lalu hitung poin dari total.
+	var customerID *string
+	var pointsEarned int64
+	if in.CustomerID != "" {
+		var exists bool
+		err := tx.QueryRow(ctx,
+			`SELECT TRUE FROM customers WHERE id = $1 AND store_id = $2`,
+			in.CustomerID, in.StoreID).Scan(&exists)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrCustomerNotFound
+		}
+		if err != nil {
+			return nil, err
+		}
+		cid := in.CustomerID
+		customerID = &cid
+		pointsEarned = total / RupiahPerPoint
+	}
+
 	var txID string
 	err = tx.QueryRow(ctx,
 		`INSERT INTO transactions
-		 (store_id, cashier_id, client_id, number, subtotal, discount, tax_percent, tax,
-		  service_percent, service_charge, total, status)
-		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+		 (store_id, cashier_id, customer_id, points_earned, client_id, number, subtotal,
+		  discount, tax_percent, tax, service_percent, service_charge, total, status)
+		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
 		 RETURNING id`,
-		in.StoreID, cashierID, clientID, number, subtotal, notaDisc, taxPct, tax,
-		svcPct, service, total, StatusSelesai).Scan(&txID)
+		in.StoreID, cashierID, customerID, pointsEarned, clientID, number, subtotal,
+		notaDisc, taxPct, tax, svcPct, service, total, StatusSelesai).Scan(&txID)
 	if err != nil {
 		// Balapan sync: client_id sudah ada → kembalikan yang tersimpan.
 		if in.ClientID != "" && isUniqueViolation(err) {
@@ -228,6 +248,23 @@ func (r *Repository) Create(ctx context.Context, in CreateInput) (*Transaction, 
 		return nil, err
 	}
 
+	// Akumulasi poin member (atomik): tambah saldo + catat buku besar 'earn'.
+	if customerID != nil && pointsEarned > 0 {
+		var newBal int64
+		if err := tx.QueryRow(ctx,
+			`UPDATE customers SET points = points + $2, updated_at = now()
+			 WHERE id = $1 RETURNING points`, *customerID, pointsEarned).Scan(&newBal); err != nil {
+			return nil, err
+		}
+		if _, err := tx.Exec(ctx,
+			`INSERT INTO loyalty_points (customer_id, type, points, balance_after, transaction_id, note)
+			 VALUES ($1, 'earn', $2, $3, $4, $5)`,
+			*customerID, pointsEarned, newBal, txID,
+			fmt.Sprintf("nota #%d", number)); err != nil {
+			return nil, err
+		}
+	}
+
 	if err := tx.Commit(ctx); err != nil {
 		return nil, err
 	}
@@ -239,14 +276,17 @@ func (r *Repository) Get(ctx context.Context, storeID, id string) (*Transaction,
 	t := &Transaction{}
 	err := r.db.QueryRow(ctx,
 		`SELECT t.id, t.store_id, s.name, s.address, s.phone, t.cashier_id, u.name,
+		        t.customer_id, cu.name, t.points_earned,
 		        t.number, t.subtotal, t.discount, t.tax_percent, t.tax,
 		        t.service_percent, t.service_charge, t.total, t.status, t.created_at
 		 FROM transactions t
 		 JOIN stores s ON s.id = t.store_id
 		 LEFT JOIN users u ON u.id = t.cashier_id
+		 LEFT JOIN customers cu ON cu.id = t.customer_id
 		 WHERE t.id = $1 AND t.store_id = $2`, id, storeID).
 		Scan(&t.ID, &t.StoreID, &t.StoreName, &t.StoreAddress, &t.StorePhone,
-			&t.CashierID, &t.CashierName, &t.Number, &t.Subtotal,
+			&t.CashierID, &t.CashierName, &t.CustomerID, &t.CustomerName, &t.PointsEarned,
+			&t.Number, &t.Subtotal,
 			&t.Discount, &t.TaxPercent, &t.Tax, &t.ServicePercent, &t.ServiceCharge,
 			&t.Total, &t.Status, &t.CreatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {

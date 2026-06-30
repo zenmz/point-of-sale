@@ -55,6 +55,9 @@ type Transaction struct {
 	StorePhone     *string   `json:"store_phone"`
 	CashierID      *string   `json:"cashier_id"`
 	CashierName    *string   `json:"cashier_name"`
+	CustomerID     *string   `json:"customer_id"`
+	CustomerName   *string   `json:"customer_name"`
+	PointsEarned   int64     `json:"points_earned"`
 	Number         int64     `json:"number"`
 	Subtotal       int64     `json:"subtotal"`
 	Discount       int64     `json:"discount"`
@@ -81,6 +84,7 @@ type ItemInput struct {
 type CreateInput struct {
 	StoreID        string
 	CashierID      string
+	CustomerID     string // member opsional; kosong = non-member
 	Items          []ItemInput
 	Discount       int64
 	TaxPercent     float64
@@ -89,3 +93,7 @@ type CreateInput struct {
 	PaidAmount     int64  // jumlah dibayar (>= total)
 	ClientID       string // UUID idempotensi (transaksi offline); kosong = online biasa
 }
+
+// PointsPerRupiah: 1 poin tiap Rp1.000 belanja (dari total nota).
+// ponytail: rasio tetap; jadikan konfigurasi per-toko bila bisnis memintanya.
+const RupiahPerPoint = 1000
