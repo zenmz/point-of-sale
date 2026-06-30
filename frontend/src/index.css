@@ -452,6 +452,80 @@ select.input {
   filter: brightness(0.96);
 }
 
+/* ===================== Hardware bar (kasir) ===================== */
+.hw-bar {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 0.35rem 0;
+  font-size: 0.82rem;
+}
+
+/* ===================== Customer display ===================== */
+.cust-display {
+  position: fixed;
+  inset: 0;
+  background: var(--ink);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  padding: clamp(1rem, 4vw, 3rem);
+}
+.cust-center {
+  margin: auto;
+  text-align: center;
+}
+.cust-welcome {
+  font-family: var(--display);
+  font-size: clamp(2rem, 6vw, 4rem);
+  font-weight: 700;
+}
+.cust-thanks {
+  font-family: var(--display);
+  font-size: clamp(2.5rem, 7vw, 5rem);
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+.cust-sale {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.cust-items {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.cust-item {
+  display: flex;
+  justify-content: space-between;
+  font-size: clamp(1.1rem, 2.5vw, 1.8rem);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  padding-bottom: 0.4rem;
+}
+.cust-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-top: 2px solid rgba(255, 255, 255, 0.3);
+  margin-top: 1rem;
+  padding-top: 1rem;
+}
+.cust-foot > span:first-child {
+  font-size: clamp(1.2rem, 3vw, 2rem);
+}
+.cust-total {
+  font-family: var(--display);
+  font-size: clamp(2.4rem, 7vw, 5rem);
+  font-weight: 700;
+  color: var(--accent);
+}
+.cust-display .muted {
+  color: rgba(255, 255, 255, 0.6);
+}
+
 /* ===================== Store switcher ===================== */
 .store-switcher {
   position: relative;

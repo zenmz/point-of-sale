@@ -286,11 +286,21 @@ Legenda: `[BE]` backend Go · `[FE]` frontend React · `[DB]` skema database · 
 > **Uji live:** PO set cost 8rb → margin 55,6% (rev 252rb−cost 112rb), tren
 > harian, kasir 403. ponytail: margin pakai cost terbaru (bukan snapshot per nota).
 
-### M3.5 — Integrasi Hardware
-- [ ] `[FE]` Integrasi printer thermal (WebUSB/escpos)
-- [ ] `[FE]` Cash drawer (trigger via printer)
-- [ ] `[FE]` Barcode scanner (input keyboard wedge)
-- [ ] `[FE]` Customer display
+### M3.5 — Integrasi Hardware ✅
+- [x] `[FE]` Integrasi printer thermal (WebUSB/escpos)
+- [x] `[FE]` Cash drawer (trigger via printer)
+- [x] `[FE]` Barcode scanner (input keyboard wedge)
+- [x] `[FE]` Customer display
+
+> Catatan: printer thermal via **WebUSB + ESC/POS** (`lib/escpos.ts`,
+> `ThermalPrinter`): init → struk teks 32 kolom → potong; tombol "Cetak thermal"
+> di layar sukses. **Cash drawer** = pulse ESC p (laci lewat printer), tombol
+> "Buka laci". **Barcode scanner** = `useBarcodeScanner` (keyboard wedge: burst
+> ketikan <40ms + Enter → cari produk via barcode lalu SKU → masuk keranjang).
+> **Customer display** = `/display` (jendela kedua, full-screen) disinkron dari
+> kasir lewat BroadcastChannel (`lib/customerDisplay.ts`). ponytail: WebUSB
+> butuh HTTPS/localhost + izin perangkat (Chromium); diverifikasi via build/tipe,
+> uji perangkat fisik saat hardware tersedia. **Fase 3 selesai.**
 
 ---
 

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import * as txApi from "../../api/transaction";
 import * as promoApi from "../../api/promo";
@@ -7,7 +7,10 @@ import { loadProducts } from "../../offline/catalogCache";
 import { enqueue, newClientId } from "../../offline/txQueue";
 import { useOnline } from "../../hooks/useOnline";
 import { useSync } from "../../hooks/useSync";
+import { useBarcodeScanner } from "../../hooks/useBarcodeScanner";
 import { formatRupiah } from "../../lib/format";
+import { ThermalPrinter, isWebUSBSupported } from "../../lib/escpos";
+import { postDisplay } from "../../lib/customerDisplay";
 import { IconPlus } from "../../components/icons";
 import type { Product } from "../../types/catalog";
 import type { PaymentMethod, Transaction } from "../../types/transaction";
@@ -48,6 +51,27 @@ export function KasirPage() {
     null,
   );
   const [paying, setPaying] = useState(false);
+  const [printerReady, setPrinterReady] = useState(false);
+  const printer = useRef(new ThermalPrinter());
+
+  async function connectPrinter() {
+    try {
+      await printer.current.connect();
+      setPrinterReady(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Gagal menyambung printer");
+    }
+  }
+
+  function openCustomerDisplay() {
+    window.open("/display", "mzpos-display", "width=480,height=720");
+  }
+
+  // Scanner barcode (keyboard wedge): cari produk via barcode lalu SKU.
+  useBarcodeScanner((code) => {
+    const p = products.find((x) => x.barcode === code) ?? products.find((x) => x.sku === code);
+    if (p) addToCart(p);
+  });
 
   const load = useCallback(async (q: string) => {
     setLoading(true);
@@ -88,6 +112,21 @@ export function KasirPage() {
 
   // Bayar = total nota dikurangi estimasi promo (tak kurang dari 0).
   const payable = Math.max(0, totals.total - promo.discount);
+
+  // Siarkan keranjang ke layar pelanggan (jendela /display).
+  useEffect(() => {
+    postDisplay({
+      status: cart.length > 0 ? "active" : "idle",
+      items: cart.map((l) => ({ name: l.name, qty: l.qty, price: l.price })),
+      total: payable,
+    });
+  }, [cart, payable]);
+
+  // Saat transaksi selesai, tampilkan ucapan terima kasih di layar pelanggan.
+  useEffect(() => {
+    const total = done?.total ?? offlineSale?.total;
+    if (total != null) postDisplay({ status: "done", items: [], total });
+  }, [done, offlineSale]);
 
   function addToCart(p: Product) {
     if (p.stock <= 0) return;
@@ -182,7 +221,7 @@ export function KasirPage() {
   }
 
   if (done) {
-    return <SaleSuccess tx={done} onNew={resetSale} />;
+    return <SaleSuccess tx={done} onNew={resetSale} printer={printer.current} />;
   }
   if (offlineSale) {
     return <OfflineSuccess sale={offlineSale} pending={pending} onNew={resetSale} />;
@@ -239,6 +278,17 @@ export function KasirPage() {
           {cart.length > 0 && (
             <button className="btn-link danger" onClick={() => setCart([])}>
               Kosongkan
+            </button>
+          )}
+        </div>
+
+        <div className="hw-bar">
+          <button className="btn-link" onClick={openCustomerDisplay}>
+            🖥 Layar pelanggan
+          </button>
+          {isWebUSBSupported() && (
+            <button className="btn-link" onClick={connectPrinter}>
+              🖨 {printerReady ? "Printer tersambung ✓" : "Hubungkan printer"}
             </button>
           )}
         </div>
@@ -478,7 +528,36 @@ function OfflineSuccess({
   );
 }
 
-function SaleSuccess({ tx, onNew }: { tx: Transaction; onNew: () => void }) {
+function SaleSuccess({
+  tx,
+  onNew,
+  printer,
+}: {
+  tx: Transaction;
+  onNew: () => void;
+  printer: ThermalPrinter;
+}) {
+  const [hwError, setHwError] = useState<string | null>(null);
+
+  async function printThermal() {
+    setHwError(null);
+    try {
+      if (!printer.connected) await printer.connect();
+      await printer.printReceipt(tx);
+    } catch (err) {
+      setHwError(err instanceof Error ? err.message : "Gagal mencetak");
+    }
+  }
+  async function kickDrawer() {
+    setHwError(null);
+    try {
+      if (!printer.connected) await printer.connect();
+      await printer.openDrawer();
+    } catch (err) {
+      setHwError(err instanceof Error ? err.message : "Gagal membuka laci");
+    }
+  }
+
   return (
     <div className="sale-done">
       <div className="card sale-done-card">
@@ -542,7 +621,20 @@ function SaleSuccess({ tx, onNew }: { tx: Transaction; onNew: () => void }) {
           )}
         </dl>
 
-        <Link to={`/struk/${tx.id}`} className="btn btn-ghost btn-block">
+        {hwError && <p className="err-box">{hwError}</p>}
+
+        {isWebUSBSupported() && (
+          <div className="row" style={{ gap: "0.5rem", marginTop: "0.4rem" }}>
+            <button className="btn btn-ghost" style={{ flex: 1 }} onClick={printThermal}>
+              🖨 Cetak thermal
+            </button>
+            <button className="btn btn-ghost" style={{ flex: 1 }} onClick={kickDrawer}>
+              💵 Buka laci
+            </button>
+          </div>
+        )}
+
+        <Link to={`/struk/${tx.id}`} className="btn btn-ghost btn-block" style={{ marginTop: "0.6rem" }}>
           Lihat / cetak struk
         </Link>
         <button

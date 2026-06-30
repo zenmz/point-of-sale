@@ -14,6 +14,7 @@ import { LaporanPage } from "./pages/laporan/LaporanPage";
 import { PelangganPage } from "./pages/pelanggan/PelangganPage";
 import { PembelianPage } from "./pages/pembelian/PembelianPage";
 import { PromoPage } from "./pages/promo/PromoPage";
+import { CustomerDisplay } from "./pages/display/CustomerDisplay";
 import { PengaturanPage } from "./pages/pengaturan/PengaturanPage";
 
 function App() {
@@ -24,6 +25,8 @@ function App() {
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            {/* Layar pelanggan: jendela kedua, tanpa shell aplikasi. */}
+            <Route path="/display" element={<CustomerDisplay />} />
 
             <Route element={<ProtectedRoute />}>
               <Route element={<AppLayout />}>
