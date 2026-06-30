@@ -7,6 +7,7 @@ import (
 	"math"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -45,6 +46,26 @@ func clampNonNeg(v int64) int64 {
 	return v
 }
 
+func isUniqueViolation(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == "23505"
+}
+
+// getByClientID mengambil transaksi berdasar client_id (nil bila belum ada).
+func (r *Repository) getByClientID(ctx context.Context, storeID, clientID string) (*Transaction, error) {
+	var id string
+	err := r.db.QueryRow(ctx,
+		`SELECT id FROM transactions WHERE store_id = $1 AND client_id = $2`,
+		storeID, clientID).Scan(&id)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return r.Get(ctx, storeID, id)
+}
+
 // Create membuat transaksi: validasi stok, kurangi stok + catat pergerakan,
 // hitung total secara otoritatif, semuanya dalam satu transaksi DB.
 func (r *Repository) Create(ctx context.Context, in CreateInput) (*Transaction, error) {
@@ -53,6 +74,16 @@ func (r *Repository) Create(ctx context.Context, in CreateInput) (*Transaction, 
 	}
 	if !in.Method.valid() {
 		return nil, ErrInvalidMethod
+	}
+
+	// Idempotensi sync offline: bila client_id sudah pernah masuk, kembalikan
+	// transaksi yang ada (skip pembuatan dobel).
+	if in.ClientID != "" {
+		if existing, err := r.getByClientID(ctx, in.StoreID, in.ClientID); err != nil {
+			return nil, err
+		} else if existing != nil {
+			return existing, nil
+		}
 	}
 
 	tx, err := r.db.Begin(ctx)
@@ -137,17 +168,27 @@ func (r *Repository) Create(ctx context.Context, in CreateInput) (*Transaction, 
 	if in.CashierID != "" {
 		cashierID = &in.CashierID
 	}
+	var clientID *string
+	if in.ClientID != "" {
+		clientID = &in.ClientID
+	}
 
 	var txID string
 	err = tx.QueryRow(ctx,
 		`INSERT INTO transactions
-		 (store_id, cashier_id, number, subtotal, discount, tax_percent, tax,
+		 (store_id, cashier_id, client_id, number, subtotal, discount, tax_percent, tax,
 		  service_percent, service_charge, total, status)
-		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
 		 RETURNING id`,
-		in.StoreID, cashierID, number, subtotal, notaDisc, taxPct, tax,
+		in.StoreID, cashierID, clientID, number, subtotal, notaDisc, taxPct, tax,
 		svcPct, service, total, StatusSelesai).Scan(&txID)
 	if err != nil {
+		// Balapan sync: client_id sudah ada → kembalikan yang tersimpan.
+		if in.ClientID != "" && isUniqueViolation(err) {
+			if existing, gErr := r.getByClientID(ctx, in.StoreID, in.ClientID); gErr == nil && existing != nil {
+				return existing, nil
+			}
+		}
 		return nil, err
 	}
 

@@ -155,11 +155,16 @@ Legenda: `[BE]` backend Go · `[FE]` frontend React · `[DB]` skema database · 
 > dari offline). Hook `useOnline` + badge "Offline" di topbar. Kasir tampilkan
 > notice offline & nonaktifkan tombol bayar (checkout offline = M2.1).
 
-### M2.1 — Transaksi Offline
-- [ ] `[FE]` Simpan transaksi offline ke antrian lokal (client_id UUID, status pending)
-- [ ] `[FE]` Lanjutkan checkout penuh tanpa koneksi
-- [ ] `[DB]` Tambah kolom `client_id` unik di `transactions`
-- [ ] `[BE]` Endpoint sync idempotent (cek client_id, skip jika ada)
+### M2.1 — Transaksi Offline ✅
+- [x] `[FE]` Simpan transaksi offline ke antrian lokal (client_id UUID, status pending)
+- [x] `[FE]` Lanjutkan checkout penuh tanpa koneksi
+- [x] `[DB]` Tambah kolom `client_id` unik di `transactions`
+- [x] `[BE]` Endpoint sync idempotent (cek client_id, skip jika ada)
+
+> Catatan: checkout kini idempoten — client_id (UUID) dicek dulu; bila sudah ada,
+> kembalikan transaksi tsb (aman untuk retry sync). Klien selalu kirim client_id.
+> Offline: payment modal jalan penuh, transaksi masuk antrian Dexie (tabel
+> pendingTx, status pending) + layar sukses offline. Auto-sync/retry = M2.2.
 
 ### M2.2 — Sync Engine
 - [ ] `[FE]` Auto-sync antrian saat online kembali

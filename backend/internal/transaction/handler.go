@@ -33,6 +33,7 @@ type checkoutReq struct {
 	ServicePercent float64     `json:"service_percent"`
 	Method         Method      `json:"method"`
 	PaidAmount     int64       `json:"paid_amount"`
+	ClientID       string      `json:"client_id"`
 }
 
 func (h *Handler) create(c *fiber.Ctx) error {
@@ -53,6 +54,7 @@ func (h *Handler) create(c *fiber.Ctx) error {
 		ServicePercent: req.ServicePercent,
 		Method:         req.Method,
 		PaidAmount:     req.PaidAmount,
+		ClientID:       req.ClientID,
 	})
 	if err != nil {
 		return mapErr(err)

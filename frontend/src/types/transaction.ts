@@ -54,4 +54,5 @@ export interface CheckoutInput {
   service_percent: number;
   method: PaymentMethod;
   paid_amount: number;
+  client_id?: string; // UUID idempotensi (transaksi offline)
 }

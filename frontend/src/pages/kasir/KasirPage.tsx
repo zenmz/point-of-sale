@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import * as txApi from "../../api/transaction";
 import { ApiError } from "../../api/client";
 import { loadProducts } from "../../offline/catalogCache";
+import { countPending, enqueue, newClientId } from "../../offline/txQueue";
 import { useOnline } from "../../hooks/useOnline";
 import { formatRupiah } from "../../lib/format";
 import { IconPlus } from "../../components/icons";
@@ -32,7 +33,15 @@ export function KasirPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<Transaction | null>(null);
+  const [offlineSale, setOfflineSale] = useState<{ total: number; method: PaymentMethod } | null>(
+    null,
+  );
+  const [pending, setPending] = useState(0);
   const [paying, setPaying] = useState(false);
+
+  useEffect(() => {
+    countPending().then(setPending);
+  }, []);
 
   const load = useCallback(async (q: string) => {
     setLoading(true);
@@ -82,6 +91,7 @@ export function KasirPage() {
     setNotaDiscount(0);
     setError(null);
     setDone(null);
+    setOfflineSale(null);
     setPaying(false);
   }
 
@@ -94,29 +104,58 @@ export function KasirPage() {
   async function onPay(method: PaymentMethod, paidAmount: number) {
     setBusy(true);
     setError(null);
+    const payload = {
+      items: cart.map((l) => ({ product_id: l.product_id, qty: l.qty, discount: l.discount })),
+      discount: notaDiscount,
+      tax_percent: taxPercent,
+      service_percent: servicePercent,
+      method,
+      paid_amount: paidAmount,
+      client_id: newClientId(),
+    };
+
+    // Online: kirim langsung. Error HTTP (mis. stok kurang) tampil ke kasir.
+    if (online) {
+      try {
+        const tx = await txApi.checkout(payload);
+        finishSale();
+        setDone(tx);
+        load(search); // segarkan stok
+        return;
+      } catch (err) {
+        if (err instanceof ApiError) {
+          setError(err.message);
+          setBusy(false);
+          return;
+        }
+        // Jaringan putus saat bayar → jatuh ke antrian offline di bawah.
+      }
+    }
+
+    // Offline: simpan ke antrian lokal (idempoten saat sinkron nanti).
     try {
-      const tx = await txApi.checkout({
-        items: cart.map((l) => ({ product_id: l.product_id, qty: l.qty, discount: l.discount })),
-        discount: notaDiscount,
-        tax_percent: taxPercent,
-        service_percent: servicePercent,
-        method,
-        paid_amount: paidAmount,
-      });
-      setPaying(false);
-      setDone(tx);
-      setCart([]);
-      setNotaDiscount(0);
-      load(search); // segarkan stok
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Gagal menyimpan transaksi");
-    } finally {
+      await enqueue(payload, totals.total);
+      setPending(await countPending());
+      finishSale();
+      setOfflineSale({ total: totals.total, method });
+    } catch {
+      setError("Gagal menyimpan transaksi offline");
       setBusy(false);
     }
   }
 
+  function finishSale() {
+    setPaying(false);
+    setBusy(false);
+    setCart([]);
+    setNotaDiscount(0);
+  }
+
   if (done) {
     return <SaleSuccess tx={done} onNew={resetSale} />;
+  }
+  if (offlineSale) {
+    return <OfflineSuccess sale={offlineSale} pending={pending} onNew={resetSale} />;
   }
 
   return (
@@ -176,7 +215,12 @@ export function KasirPage() {
 
         {!online && (
           <p className="offline-note">
-            Mode offline — katalog dari cache. Pembayaran offline menyusul (M2.1).
+            Mode offline — katalog dari cache. Transaksi disimpan & disinkron saat online.
+          </p>
+        )}
+        {pending > 0 && (
+          <p className="muted" style={{ fontSize: "0.82rem", margin: 0 }}>
+            {pending} transaksi menunggu sinkronisasi.
           </p>
         )}
         {error && <p className="err-box">{error}</p>}
@@ -306,11 +350,11 @@ export function KasirPage() {
 
         <button
           className="btn btn-primary btn-block"
-          disabled={cart.length === 0 || busy || !online}
+          disabled={cart.length === 0 || busy}
           onClick={openPayment}
         >
           <IconPlus size={18} />
-          {online ? `Bayar ${formatRupiah(totals.total)}` : "Bayar (butuh koneksi)"}
+          {`Bayar ${formatRupiah(totals.total)}`}
         </button>
       </section>
 
@@ -323,6 +367,49 @@ export function KasirPage() {
           onConfirm={onPay}
         />
       )}
+    </div>
+  );
+}
+
+function OfflineSuccess({
+  sale,
+  pending,
+  onNew,
+}: {
+  sale: { total: number; method: PaymentMethod };
+  pending: number;
+  onNew: () => void;
+}) {
+  return (
+    <div className="sale-done">
+      <div className="card sale-done-card">
+        <div className="sale-done-check offline">⤓</div>
+        <h1>Tersimpan offline</h1>
+        <p className="muted">Akan disinkron otomatis saat online</p>
+
+        <dl className="totals" style={{ marginTop: "1rem" }}>
+          <div className="totals-grand">
+            <dt>Total</dt>
+            <dd className="money">{formatRupiah(sale.total)}</dd>
+          </div>
+          <div>
+            <dt>Metode</dt>
+            <dd>{METHOD_LABEL[sale.method]}</dd>
+          </div>
+          <div>
+            <dt>Menunggu sinkron</dt>
+            <dd>{pending}</dd>
+          </div>
+        </dl>
+
+        <p className="muted" style={{ fontSize: "0.82rem", marginTop: "0.5rem" }}>
+          Nota & struk terbit setelah transaksi tersinkron ke server.
+        </p>
+
+        <button className="btn btn-primary btn-block" onClick={onNew}>
+          Transaksi baru
+        </button>
+      </div>
     </div>
   );
 }

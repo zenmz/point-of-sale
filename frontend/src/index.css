@@ -723,6 +723,10 @@ select.input {
   font-size: 1.6rem;
   font-weight: 700;
 }
+.sale-done-check.offline {
+  background: var(--accent-100);
+  color: #8a5a09;
+}
 
 /* Pembayaran */
 .pay-total {

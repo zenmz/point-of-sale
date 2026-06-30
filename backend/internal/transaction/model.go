@@ -86,5 +86,6 @@ type CreateInput struct {
 	TaxPercent     float64
 	ServicePercent float64
 	Method         Method
-	PaidAmount     int64 // jumlah dibayar (>= total)
+	PaidAmount     int64  // jumlah dibayar (>= total)
+	ClientID       string // UUID idempotensi (transaksi offline); kosong = online biasa
 }
