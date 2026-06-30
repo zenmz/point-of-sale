@@ -4,6 +4,8 @@ import { useAuth } from "../../hooks/useAuth";
 import type { InventoryItem } from "../../types/inventory";
 import { AdjustForm } from "./AdjustForm";
 import { MovementHistory } from "./MovementHistory";
+import { TransferForm } from "./TransferForm";
+import { OpnameForm } from "./OpnameForm";
 
 // Ambang stok menipis (MVP: tetap; konfigurasi per produk menyusul).
 const LOW_STOCK = 5;
@@ -11,12 +13,15 @@ const LOW_STOCK = 5;
 export function StockPage() {
   const { user } = useAuth();
   const canEdit = user?.role === "admin" || user?.role === "owner";
+  const isOwner = user?.role === "owner";
 
   const [items, setItems] = useState<InventoryItem[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [adjusting, setAdjusting] = useState<InventoryItem | null>(null);
   const [history, setHistory] = useState<InventoryItem | null>(null);
+  const [transfer, setTransfer] = useState(false);
+  const [opname, setOpname] = useState(false);
 
   const load = useCallback(async (q: string) => {
     setLoading(true);
@@ -44,6 +49,18 @@ export function StockPage() {
             {lowCount > 0 && ` · ${lowCount} menipis`}
           </p>
         </div>
+        {canEdit && (
+          <div className="row" style={{ gap: "0.5rem" }}>
+            <button className="btn btn-ghost" onClick={() => setOpname(true)}>
+              Opname
+            </button>
+            {isOwner && (
+              <button className="btn btn-primary" onClick={() => setTransfer(true)}>
+                Transfer
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="card" style={{ padding: 0 }}>
@@ -116,6 +133,28 @@ export function StockPage() {
       )}
 
       {history && <MovementHistory item={history} onClose={() => setHistory(null)} />}
+
+      {transfer && (
+        <TransferForm
+          items={items.filter((i) => i.quantity > 0)}
+          onClose={() => setTransfer(false)}
+          onSaved={() => {
+            setTransfer(false);
+            load(search);
+          }}
+        />
+      )}
+
+      {opname && (
+        <OpnameForm
+          items={items}
+          onClose={() => setOpname(false)}
+          onSaved={() => {
+            setOpname(false);
+            load(search);
+          }}
+        />
+      )}
     </div>
   );
 }

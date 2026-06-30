@@ -25,3 +25,30 @@ export interface AdjustInput {
   qty: number; // jumlah (masuk/keluar) atau nilai target (penyesuaian)
   reason: string | null;
 }
+
+// Transfer stok antar cabang.
+export interface Transfer {
+  id: string;
+  from_store_id: string;
+  from_store_name: string;
+  to_store_id: string;
+  to_store_name: string;
+  product_id: string;
+  product_name: string;
+  qty: number;
+  note: string | null;
+  created_at: string;
+}
+
+export interface OpnameItem {
+  product_id: string;
+  physical: number;
+}
+
+export interface OpnameResult {
+  product_id: string;
+  name: string;
+  system_qty: number;
+  physical: number;
+  difference: number; // fisik − sistem
+}

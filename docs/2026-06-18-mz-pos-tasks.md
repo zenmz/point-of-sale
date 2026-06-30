@@ -208,11 +208,21 @@ Legenda: `[BE]` backend Go · `[FE]` frontend React · `[DB]` skema database · 
 > tabel "Per cabang" saat >1 cabang. **Uji live:** 2 nota di Toko A & C →
 > gabungan 126rb (A 36rb + C 90rb), metode bayar tergabung, filter A isolasi benar.
 
-### M2.5 — Transfer Stok & Opname
-- [ ] `[DB]` Tabel `stock_transfers`
-- [ ] `[BE]` Endpoint transfer stok antar cabang (kurangi sumber, tambah tujuan)
-- [ ] `[FE]` UI transfer stok
-- [ ] `[BE]` `[FE]` Stock opname/audit (input fisik vs sistem, selisih)
+### M2.5 — Transfer Stok & Opname ✅
+- [x] `[DB]` Tabel `stock_transfers`
+- [x] `[BE]` Endpoint transfer stok antar cabang (kurangi sumber, tambah tujuan)
+- [x] `[FE]` UI transfer stok
+- [x] `[BE]` `[FE]` Stock opname/audit (input fisik vs sistem, selisih)
+
+> Catatan: transfer (owner) `POST /inventory/transfer` — 1 transaksi: kunci stok
+> sumber, kurangi (keluar), padankan produk di cabang tujuan via SKU lalu nama,
+> tambah (masuk), catat baris `stock_transfers` + 2 `stock_movement`. Stok wajib
+> cukup (409 bila kurang). `GET /inventory/transfers` riwayat masuk/keluar cabang.
+> Opname (admin/owner) `POST /inventory/opname` — input fisik per produk, server
+> terapkan penyesuaian (set absolut) untuk yang selisihnya ≠ 0, kembalikan
+> rincian selisih. FE: tombol Transfer (owner) & Opname di halaman Stok.
+> **Uji live:** transfer A→C 10 unit (A −10, C +10, padanan via SKU), opname
+> selisih −3 diterapkan, oversell 409, kasir transfer 403.
 
 ---
 
