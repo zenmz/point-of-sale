@@ -408,6 +408,20 @@ select.input {
   width: 400px;
 }
 
+/* Indikator offline */
+.offline-chip {
+  background: var(--danger-100);
+  color: var(--danger);
+}
+.offline-note {
+  background: var(--accent-100);
+  color: #8a5a09;
+  padding: 0.55rem 0.8rem;
+  border-radius: var(--r-sm);
+  font-size: 0.85rem;
+  margin: 0;
+}
+
 /* Chip shift (klikable) di topbar */
 .shift-chip {
   border: none;

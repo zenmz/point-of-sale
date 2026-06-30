@@ -2,6 +2,7 @@ import { useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { ShiftWidget } from "./ShiftWidget";
+import { OfflineBadge } from "./OfflineBadge";
 import { IconHome, IconCart, IconBox, IconLayers, IconChart, IconLogout, IconMenu } from "./icons";
 import type { ComponentType } from "react";
 import "./AppLayout.css";
@@ -86,6 +87,7 @@ export function AppLayout() {
           </div>
 
           <div className="topbar-right">
+            <OfflineBadge />
             <ShiftWidget />
             <div className="user-box">
               <div className="user-name">{user?.name}</div>

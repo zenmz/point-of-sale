@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import * as catalogApi from "../../api/catalog";
 import * as txApi from "../../api/transaction";
 import { ApiError } from "../../api/client";
+import { loadProducts } from "../../offline/catalogCache";
+import { useOnline } from "../../hooks/useOnline";
 import { formatRupiah } from "../../lib/format";
 import { IconPlus } from "../../components/icons";
 import type { Product } from "../../types/catalog";
@@ -18,6 +19,7 @@ const METHOD_LABEL: Record<PaymentMethod, string> = {
 };
 
 export function KasirPage() {
+  const online = useOnline();
   const [products, setProducts] = useState<Product[]>([]);
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
@@ -35,7 +37,8 @@ export function KasirPage() {
   const load = useCallback(async (q: string) => {
     setLoading(true);
     try {
-      setProducts(await catalogApi.listProducts(q));
+      const { products } = await loadProducts(q);
+      setProducts(products);
     } finally {
       setLoading(false);
     }
@@ -171,6 +174,11 @@ export function KasirPage() {
           )}
         </div>
 
+        {!online && (
+          <p className="offline-note">
+            Mode offline — katalog dari cache. Pembayaran offline menyusul (M2.1).
+          </p>
+        )}
         {error && <p className="err-box">{error}</p>}
 
         {cart.length === 0 ? (
@@ -298,11 +306,11 @@ export function KasirPage() {
 
         <button
           className="btn btn-primary btn-block"
-          disabled={cart.length === 0 || busy}
+          disabled={cart.length === 0 || busy || !online}
           onClick={openPayment}
         >
           <IconPlus size={18} />
-          {`Bayar ${formatRupiah(totals.total)}`}
+          {online ? `Bayar ${formatRupiah(totals.total)}` : "Bayar (butuh koneksi)"}
         </button>
       </section>
 

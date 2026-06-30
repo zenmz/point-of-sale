@@ -145,10 +145,15 @@ Legenda: `[BE]` backend Go · `[FE]` frontend React · `[DB]` skema database · 
 
 ## FASE 2 — Offline + Multi-toko
 
-### M2.0 — Fondasi Offline
-- [ ] `[FE]` Setup IndexedDB (Dexie) + skema lokal
-- [ ] `[FE]` Cache katalog produk ke IndexedDB saat online
-- [ ] `[FE]` Deteksi status online/offline
+### M2.0 — Fondasi Offline ✅
+- [x] `[FE]` Setup IndexedDB (Dexie) + skema lokal
+- [x] `[FE]` Cache katalog produk ke IndexedDB saat online
+- [x] `[FE]` Deteksi status online/offline
+
+> Catatan: Dexie db `mzpos` (tabel products, categories). `loadProducts` cache
+> saat online + fallback ke cache saat offline (error HTTP tetap dilempar, beda
+> dari offline). Hook `useOnline` + badge "Offline" di topbar. Kasir tampilkan
+> notice offline & nonaktifkan tombol bayar (checkout offline = M2.1).
 
 ### M2.1 — Transaksi Offline
 - [ ] `[FE]` Simpan transaksi offline ke antrian lokal (client_id UUID, status pending)
