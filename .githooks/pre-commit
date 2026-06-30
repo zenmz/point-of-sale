@@ -1,0 +1,30 @@
+#!/bin/sh
+# Pre-commit MZ POS: cek format Go + vet + test backend, lalu lint frontend.
+# Aktifkan sekali: git config core.hooksPath .githooks
+set -e
+root="$(git rev-parse --show-toplevel)"
+
+if [ -d "$root/backend" ] && command -v go >/dev/null 2>&1; then
+  echo "▶ backend: gofmt + vet + test"
+  unformatted="$(gofmt -l "$root/backend" 2>/dev/null || true)"
+  if [ -n "$unformatted" ]; then
+    echo "✗ gofmt: berkas belum diformat:"
+    echo "$unformatted"
+    echo "  perbaiki: gofmt -w backend"
+    exit 1
+  fi
+  (cd "$root/backend" && go vet ./... && go test ./...) || {
+    echo "✗ backend vet/test gagal"
+    exit 1
+  }
+fi
+
+if [ -d "$root/frontend" ] && command -v npm >/dev/null 2>&1; then
+  echo "▶ frontend: lint"
+  (cd "$root/frontend" && npm run lint --silent) || {
+    echo "✗ frontend lint gagal"
+    exit 1
+  }
+fi
+
+echo "✓ pre-commit lulus"

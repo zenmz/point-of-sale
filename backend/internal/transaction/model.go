@@ -39,6 +39,7 @@ type Payment struct {
 type Item struct {
 	ID        string  `json:"id"`
 	ProductID *string `json:"product_id"`
+	VariantID *string `json:"variant_id"`
 	Name      string  `json:"name"`
 	Price     int64   `json:"price"`
 	Qty       int64   `json:"qty"`
@@ -76,6 +77,7 @@ type Transaction struct {
 // ItemInput = item yang dikirim klien saat checkout.
 type ItemInput struct {
 	ProductID string `json:"product_id"`
+	VariantID string `json:"variant_id"` // opsional; harga varian override harga produk
 	Qty       int64  `json:"qty"`
 	Discount  int64  `json:"discount"`
 }

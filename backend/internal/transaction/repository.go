@@ -22,7 +22,48 @@ var (
 	ErrPaymentShort     = errors.New("pembayaran kurang dari total")
 	ErrCustomerNotFound = errors.New("member tidak ditemukan")
 	ErrInvalidQty       = errors.New("qty harus lebih dari nol")
+	ErrVariantNotFound  = errors.New("varian tidak ditemukan")
 )
+
+// rowQuerier dipenuhi oleh *pgxpool.Pool maupun pgx.Tx.
+type rowQuerier interface {
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+}
+
+// resolveLine menentukan nama & harga satu baris: harga produk, di-override oleh
+// harga varian bila varian dipilih & punya harga. Dipakai bersama Create & Quote
+// agar harga pratinjau == harga checkout. Stok tetap di level produk.
+func resolveLine(ctx context.Context, q rowQuerier, storeID string, it ItemInput) (name string, price int64, variantID *string, err error) {
+	err = q.QueryRow(ctx,
+		`SELECT name, price FROM products WHERE id = $1 AND store_id = $2 AND is_active = TRUE`,
+		it.ProductID, storeID).Scan(&name, &price)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return "", 0, nil, ErrProductNotFound
+	}
+	if err != nil {
+		return "", 0, nil, err
+	}
+	if it.VariantID != "" {
+		var vname string
+		var vprice *int64
+		err = q.QueryRow(ctx,
+			`SELECT name, price FROM variants WHERE id = $1 AND product_id = $2`,
+			it.VariantID, it.ProductID).Scan(&vname, &vprice)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", 0, nil, ErrVariantNotFound
+		}
+		if err != nil {
+			return "", 0, nil, err
+		}
+		name = name + " - " + vname
+		if vprice != nil {
+			price = *vprice
+		}
+		vid := it.VariantID
+		variantID = &vid
+	}
+	return name, price, variantID, nil
+}
 
 // Totals = rincian perhitungan nota (dipakai bersama oleh checkout & quote).
 type Totals struct {
@@ -140,21 +181,13 @@ func (r *Repository) Create(ctx context.Context, in CreateInput) (*Transaction, 
 			return nil, ErrInvalidQty
 		}
 
-		// Snapshot produk (harus aktif & milik toko).
-		var name string
-		var price int64
-		err := tx.QueryRow(ctx,
-			`SELECT name, price FROM products
-			 WHERE id = $1 AND store_id = $2 AND is_active = TRUE`,
-			it.ProductID, in.StoreID).Scan(&name, &price)
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, ErrProductNotFound
-		}
+		// Snapshot nama & harga (varian override bila dipilih).
+		name, price, variantID, err := resolveLine(ctx, tx, in.StoreID, it)
 		if err != nil {
 			return nil, err
 		}
 
-		// Kunci & ambil stok (0 bila belum ada baris).
+		// Kunci & ambil stok (level produk, 0 bila belum ada baris).
 		var stock int64
 		err = tx.QueryRow(ctx,
 			`SELECT quantity FROM inventory WHERE product_id = $1 FOR UPDATE`, it.ProductID).Scan(&stock)
@@ -172,7 +205,7 @@ func (r *Repository) Create(ctx context.Context, in CreateInput) (*Transaction, 
 
 		pid := it.ProductID
 		items = append(items, Item{
-			ProductID: &pid, Name: name, Price: price, Qty: it.Qty,
+			ProductID: &pid, VariantID: variantID, Name: name, Price: price, Qty: it.Qty,
 			Discount: disc, LineTotal: lineTotal,
 		})
 	}
@@ -218,7 +251,8 @@ func (r *Repository) Create(ctx context.Context, in CreateInput) (*Transaction, 
 		clientID = &in.ClientID
 	}
 
-	// Member opsional: validasi milik toko ini, lalu hitung poin dari total.
+	// Member opsional: validasi milik toko ini, lalu hitung poin dari nilai
+	// belanja barang (subtotal − diskon − promo), TIDAK termasuk pajak/service.
 	var customerID *string
 	var pointsEarned int64
 	if in.CustomerID != "" {
@@ -234,7 +268,8 @@ func (r *Repository) Create(ctx context.Context, in CreateInput) (*Transaction, 
 		}
 		cid := in.CustomerID
 		customerID = &cid
-		pointsEarned = ft.Total / RupiahPerPoint
+		merchandise := ft.Total - ft.Tax - ft.Service // = afterDisc
+		pointsEarned = merchandise / RupiahPerPoint
 	}
 
 	var txID string
@@ -261,9 +296,10 @@ func (r *Repository) Create(ctx context.Context, in CreateInput) (*Transaction, 
 		item := &items[i]
 		if _, err := tx.Exec(ctx,
 			`INSERT INTO transaction_items
-			 (transaction_id, product_id, name, price, qty, discount, line_total)
-			 VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-			txID, item.ProductID, item.Name, item.Price, item.Qty, item.Discount, item.LineTotal); err != nil {
+			 (transaction_id, product_id, variant_id, name, price, qty, discount, line_total, line_no)
+			 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+			txID, item.ProductID, item.VariantID, item.Name, item.Price, item.Qty,
+			item.Discount, item.LineTotal, i+1); err != nil {
 			return nil, err
 		}
 
@@ -327,13 +363,7 @@ func (r *Repository) Quote(ctx context.Context, in QuoteInput) (*Totals, error) 
 		if it.Qty <= 0 {
 			return nil, ErrInvalidQty
 		}
-		var price int64
-		err := r.db.QueryRow(ctx,
-			`SELECT price FROM products WHERE id = $1 AND store_id = $2 AND is_active = TRUE`,
-			it.ProductID, in.StoreID).Scan(&price)
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, ErrProductNotFound
-		}
+		_, price, _, err := resolveLine(ctx, r.db, in.StoreID, it)
 		if err != nil {
 			return nil, err
 		}
@@ -378,8 +408,8 @@ func (r *Repository) Get(ctx context.Context, storeID, id string) (*Transaction,
 	}
 
 	rows, err := r.db.Query(ctx,
-		`SELECT id, product_id, name, price, qty, discount, line_total
-		 FROM transaction_items WHERE transaction_id = $1 ORDER BY created_at, id`, id)
+		`SELECT id, product_id, variant_id, name, price, qty, discount, line_total
+		 FROM transaction_items WHERE transaction_id = $1 ORDER BY line_no, created_at, id`, id)
 	if err != nil {
 		return nil, err
 	}
@@ -388,7 +418,7 @@ func (r *Repository) Get(ctx context.Context, storeID, id string) (*Transaction,
 	t.Items = []Item{}
 	for rows.Next() {
 		var it Item
-		if err := rows.Scan(&it.ID, &it.ProductID, &it.Name, &it.Price, &it.Qty,
+		if err := rows.Scan(&it.ID, &it.ProductID, &it.VariantID, &it.Name, &it.Price, &it.Qty,
 			&it.Discount, &it.LineTotal); err != nil {
 			return nil, err
 		}

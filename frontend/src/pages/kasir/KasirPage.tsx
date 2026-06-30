@@ -2,8 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import * as txApi from "../../api/transaction";
 import type { QuoteResult } from "../../api/transaction";
+import * as catalogApi from "../../api/catalog";
 import { ApiError } from "../../api/client";
 import { loadProducts } from "../../offline/catalogCache";
+import { searchCustomers } from "../../offline/customerCache";
 import { enqueue, newClientId } from "../../offline/txQueue";
 import { useOnline } from "../../hooks/useOnline";
 import { useSync } from "../../hooks/useSync";
@@ -18,6 +20,7 @@ import type { Customer } from "../../types/customer";
 import { computeTotals, lineTotal, newLine, type CartLine } from "./cart";
 import { PaymentModal } from "./PaymentModal";
 import { MemberModal } from "./MemberModal";
+import { VariantPicker } from "./VariantPicker";
 
 const METHOD_LABEL: Record<PaymentMethod, string> = {
   tunai: "Tunai",
@@ -38,6 +41,8 @@ export function KasirPage() {
   const [memberOpen, setMemberOpen] = useState(false);
   // Quote otoritatif dari server (online). null = pakai perhitungan lokal (offline).
   const [quote, setQuote] = useState<QuoteResult | null>(null);
+  // Produk yang sedang dipilih variannya (detail varian dari server).
+  const [variantPick, setVariantPick] = useState<Product | null>(null);
   const [notaDiscount, setNotaDiscount] = useState(0);
   const [taxPercent, setTaxPercent] = useState(0);
   const [servicePercent, setServicePercent] = useState(0);
@@ -70,7 +75,8 @@ export function KasirPage() {
   // Scanner barcode (keyboard wedge): cari produk via barcode lalu SKU.
   useBarcodeScanner((code) => {
     const p = products.find((x) => x.barcode === code) ?? products.find((x) => x.sku === code);
-    if (p) addToCart(p);
+    // Scan barcode = produk spesifik → tambah baris dasar langsung (tanpa picker).
+    if (p && p.stock > 0) addLine(newLine(p));
   });
 
   const load = useCallback(async (q: string) => {
@@ -82,6 +88,11 @@ export function KasirPage() {
       setLoading(false);
     }
   }, []);
+
+  // Pemanasan cache member sekali saat online (agar bisa pilih member offline).
+  useEffect(() => {
+    if (online) void searchCustomers("").catch(() => {});
+  }, [online]);
 
   useEffect(() => {
     const t = setTimeout(() => load(search), 300);
@@ -104,7 +115,12 @@ export function KasirPage() {
       }
       txApi
         .quote({
-          items: cart.map((l) => ({ product_id: l.product_id, qty: l.qty, discount: l.discount })),
+          items: cart.map((l) => ({
+            product_id: l.product_id,
+            variant_id: l.variant_id,
+            qty: l.qty,
+            discount: l.discount,
+          })),
           discount: notaDiscount,
           tax_percent: taxPercent,
           service_percent: servicePercent,
@@ -141,27 +157,40 @@ export function KasirPage() {
     if (total != null) postDisplay({ status: "done", items: [], total });
   }, [done, offlineSale]);
 
-  function addToCart(p: Product) {
-    if (p.stock <= 0) return;
+  // addLine menambah/menggabung satu baris keranjang berdasar key (produk+varian).
+  function addLine(line: CartLine) {
     setError(null);
     setCart((prev) => {
-      const i = prev.findIndex((l) => l.product_id === p.id);
-      if (i === -1) return [...prev, newLine(p)];
+      const i = prev.findIndex((l) => l.key === line.key);
+      if (i === -1) return [...prev, line];
       return prev.map((l, idx) => (idx === i ? { ...l, qty: Math.min(l.qty + 1, l.stock) } : l));
     });
   }
 
-  function patchLine(id: string, patch: Partial<CartLine>) {
-    setCart((prev) => prev.map((l) => (l.product_id === id ? { ...l, ...patch } : l)));
+  function addToCart(p: Product) {
+    if (p.stock <= 0) return;
+    // Produk bervarian: pilih varian dulu (perlu detail varian dari server).
+    if (p.variant_count > 0 && online) {
+      catalogApi
+        .getProduct(p.id)
+        .then((full) => setVariantPick({ ...full, stock: p.stock }))
+        .catch(() => addLine(newLine(p)));
+      return;
+    }
+    addLine(newLine(p));
+  }
+
+  function patchLine(key: string, patch: Partial<CartLine>) {
+    setCart((prev) => prev.map((l) => (l.key === key ? { ...l, ...patch } : l)));
   }
 
   function setQty(line: CartLine, qty: number) {
     const clamped = Math.max(1, Math.min(qty, line.stock));
-    patchLine(line.product_id, { qty: clamped });
+    patchLine(line.key, { qty: clamped });
   }
 
-  function removeLine(id: string) {
-    setCart((prev) => prev.filter((l) => l.product_id !== id));
+  function removeLine(key: string) {
+    setCart((prev) => prev.filter((l) => l.key !== key));
   }
 
   function resetSale() {
@@ -184,7 +213,12 @@ export function KasirPage() {
     setBusy(true);
     setError(null);
     const payload = {
-      items: cart.map((l) => ({ product_id: l.product_id, qty: l.qty, discount: l.discount })),
+      items: cart.map((l) => ({
+        product_id: l.product_id,
+        variant_id: l.variant_id,
+        qty: l.qty,
+        discount: l.discount,
+      })),
       discount: notaDiscount,
       tax_percent: taxPercent,
       service_percent: servicePercent,
@@ -326,12 +360,12 @@ export function KasirPage() {
         ) : (
           <div className="cart-lines">
             {cart.map((l) => (
-              <div key={l.product_id} className="cart-line">
+              <div key={l.key} className="cart-line">
                 <div className="cart-line-top">
                   <strong>{l.name}</strong>
                   <button
                     className="icon-x"
-                    onClick={() => removeLine(l.product_id)}
+                    onClick={() => removeLine(l.key)}
                     aria-label="Hapus item"
                   >
                     ✕
@@ -363,7 +397,7 @@ export function KasirPage() {
                       min={0}
                       value={l.discount}
                       onChange={(e) =>
-                        patchLine(l.product_id, { discount: Math.max(0, Number(e.target.value)) })
+                        patchLine(l.key, { discount: Math.max(0, Number(e.target.value)) })
                       }
                     />
                   </label>
@@ -388,8 +422,8 @@ export function KasirPage() {
               </button>
             </div>
           ) : (
-            <button className="btn-link" onClick={() => setMemberOpen(true)} disabled={!online}>
-              + Tambahkan member {online ? "" : "(perlu online)"}
+            <button className="btn-link" onClick={() => setMemberOpen(true)}>
+              + Tambahkan member {online ? "" : "(dari cache)"}
             </button>
           )}
         </div>
@@ -493,6 +527,17 @@ export function KasirPage() {
           onPick={(c) => {
             setMember(c);
             setMemberOpen(false);
+          }}
+        />
+      )}
+
+      {variantPick && (
+        <VariantPicker
+          product={variantPick}
+          onClose={() => setVariantPick(null)}
+          onPick={(line) => {
+            addLine(line);
+            setVariantPick(null);
           }}
         />
       )}

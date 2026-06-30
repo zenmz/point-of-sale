@@ -1,5 +1,6 @@
 import Dexie, { type Table } from "dexie";
 import type { Category, Product } from "../types/catalog";
+import type { Customer } from "../types/customer";
 import type { CheckoutInput } from "../types/transaction";
 
 export type PendingStatus = "pending" | "error";
@@ -20,6 +21,7 @@ export class MzposDB extends Dexie {
   products!: Table<Product, string>;
   categories!: Table<Category, string>;
   pendingTx!: Table<PendingTx, string>;
+  customers!: Table<Customer, string>;
 
   constructor() {
     super("mzpos");
@@ -31,6 +33,13 @@ export class MzposDB extends Dexie {
       products: "id, name, sku, barcode, category_id",
       categories: "id, name",
       pendingTx: "client_id, status, created_at",
+    });
+    // v3: cache member untuk pilih member saat offline (M3.1 + offline).
+    this.version(3).stores({
+      products: "id, name, sku, barcode, category_id",
+      categories: "id, name",
+      pendingTx: "client_id, status, created_at",
+      customers: "id, name, phone",
     });
   }
 }

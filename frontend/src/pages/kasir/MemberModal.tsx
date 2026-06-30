@@ -1,5 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import * as customerApi from "../../api/customer";
+import { searchCustomers } from "../../offline/customerCache";
+import { useOnline } from "../../hooks/useOnline";
 import { ApiError } from "../../api/client";
 import type { Customer } from "../../types/customer";
 
@@ -11,6 +13,7 @@ export function MemberModal({
   onClose: () => void;
   onPick: (c: Customer) => void;
 }) {
+  const online = useOnline();
   const [tab, setTab] = useState<"cari" | "baru">("cari");
   const [search, setSearch] = useState("");
   const [results, setResults] = useState<Customer[]>([]);
@@ -22,8 +25,7 @@ export function MemberModal({
   useEffect(() => {
     if (tab !== "cari") return;
     const t = setTimeout(() => {
-      customerApi
-        .listCustomers(search)
+      searchCustomers(search)
         .then(setResults)
         .catch(() => setResults([]));
     }, 250);
@@ -60,6 +62,8 @@ export function MemberModal({
           <button
             className={`seg-btn${tab === "baru" ? " active" : ""}`}
             onClick={() => setTab("baru")}
+            disabled={!online}
+            title={online ? "" : "Daftar member baru perlu online"}
           >
             Daftar baru
           </button>

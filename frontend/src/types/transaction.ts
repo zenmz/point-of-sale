@@ -47,6 +47,7 @@ export interface Transaction {
 // Payload checkout. Total dihitung ulang otoritatif di server.
 export interface CheckoutItem {
   product_id: string;
+  variant_id?: string;
   qty: number;
   discount: number;
 }

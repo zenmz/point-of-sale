@@ -1,13 +1,21 @@
-import type { Product } from "../../types/catalog";
+import type { Product, Variant } from "../../types/catalog";
 
 // Satu baris keranjang: snapshot produk + qty & diskon yang sedang diedit kasir.
+// `key` membedakan baris (produk + varian) — satu produk bisa punya beberapa
+// varian sekaligus di keranjang. Stok tetap di level produk.
 export interface CartLine {
+  key: string;
   product_id: string;
+  variant_id?: string;
   name: string;
   price: number;
   stock: number;
   qty: number;
   discount: number; // diskon per item (Rp)
+}
+
+export function lineKey(productId: string, variantId?: string): string {
+  return `${productId}:${variantId ?? ""}`;
 }
 
 export interface Totals {
@@ -43,7 +51,29 @@ export function computeTotals(
 }
 
 export function newLine(p: Product): CartLine {
-  return { product_id: p.id, name: p.name, price: p.price, stock: p.stock, qty: 1, discount: 0 };
+  return {
+    key: lineKey(p.id),
+    product_id: p.id,
+    name: p.name,
+    price: p.price,
+    stock: p.stock,
+    qty: 1,
+    discount: 0,
+  };
+}
+
+// newVariantLine: baris untuk varian terpilih (harga varian override harga produk).
+export function newVariantLine(p: Product, v: Variant): CartLine {
+  return {
+    key: lineKey(p.id, v.id),
+    product_id: p.id,
+    variant_id: v.id,
+    name: `${p.name} - ${v.name}`,
+    price: v.price ?? p.price,
+    stock: p.stock,
+    qty: 1,
+    discount: 0,
+  };
 }
 
 function clampPercent(p: number): number {

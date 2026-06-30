@@ -112,7 +112,7 @@ func mapErr(err error) error {
 		errors.Is(err, ErrPaymentShort), errors.Is(err, ErrInvalidQty):
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	case errors.Is(err, ErrProductNotFound), errors.Is(err, ErrNotFound),
-		errors.Is(err, ErrCustomerNotFound):
+		errors.Is(err, ErrCustomerNotFound), errors.Is(err, ErrVariantNotFound):
 		return fiber.NewError(fiber.StatusNotFound, err.Error())
 	default:
 		return err
