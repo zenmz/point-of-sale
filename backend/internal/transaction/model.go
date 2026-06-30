@@ -61,6 +61,7 @@ type Transaction struct {
 	Number         int64     `json:"number"`
 	Subtotal       int64     `json:"subtotal"`
 	Discount       int64     `json:"discount"`
+	PromoDiscount  int64     `json:"promo_discount"`
 	TaxPercent     float64   `json:"tax_percent"`
 	Tax            int64     `json:"tax"`
 	ServicePercent float64   `json:"service_percent"`

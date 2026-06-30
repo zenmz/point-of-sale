@@ -5,10 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/mzpos/backend/internal/promo"
 )
 
 var (
@@ -142,9 +145,25 @@ func (r *Repository) Create(ctx context.Context, in CreateInput) (*Transaction, 
 		})
 	}
 
-	// Diskon nota & pajak/service dihitung dari subtotal setelah diskon item.
+	// Promo otomatis: ambil promo aktif lalu hitung diskon (server otoritatif).
+	promoLines := make([]promo.Line, 0, len(items))
+	for _, it := range items {
+		pid := ""
+		if it.ProductID != nil {
+			pid = *it.ProductID
+		}
+		promoLines = append(promoLines, promo.Line{ProductID: pid, Qty: it.Qty, LineTotal: it.LineTotal})
+	}
+	promos, err := promo.QueryActive(ctx, tx, in.StoreID)
+	if err != nil {
+		return nil, err
+	}
+	promoDisc := promo.Compute(promoLines, subtotal, time.Now().Hour(), promos).Discount
+
+	// Diskon nota & pajak/service dihitung dari subtotal setelah diskon item & promo.
 	notaDisc := min(clampNonNeg(in.Discount), subtotal)
-	afterDisc := subtotal - notaDisc
+	promoDisc = min(promoDisc, subtotal-notaDisc) // jangan melebihi sisa
+	afterDisc := subtotal - notaDisc - promoDisc
 	taxPct := clampPercent(in.TaxPercent)
 	svcPct := clampPercent(in.ServicePercent)
 	tax := int64(math.Round(float64(afterDisc) * taxPct / 100))
@@ -197,11 +216,11 @@ func (r *Repository) Create(ctx context.Context, in CreateInput) (*Transaction, 
 	err = tx.QueryRow(ctx,
 		`INSERT INTO transactions
 		 (store_id, cashier_id, customer_id, points_earned, client_id, number, subtotal,
-		  discount, tax_percent, tax, service_percent, service_charge, total, status)
-		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+		  discount, promo_discount, tax_percent, tax, service_percent, service_charge, total, status)
+		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
 		 RETURNING id`,
 		in.StoreID, cashierID, customerID, pointsEarned, clientID, number, subtotal,
-		notaDisc, taxPct, tax, svcPct, service, total, StatusSelesai).Scan(&txID)
+		notaDisc, promoDisc, taxPct, tax, svcPct, service, total, StatusSelesai).Scan(&txID)
 	if err != nil {
 		// Balapan sync: client_id sudah ada → kembalikan yang tersimpan.
 		if in.ClientID != "" && isUniqueViolation(err) {
@@ -277,7 +296,7 @@ func (r *Repository) Get(ctx context.Context, storeID, id string) (*Transaction,
 	err := r.db.QueryRow(ctx,
 		`SELECT t.id, t.store_id, s.name, s.address, s.phone, t.cashier_id, u.name,
 		        t.customer_id, cu.name, t.points_earned,
-		        t.number, t.subtotal, t.discount, t.tax_percent, t.tax,
+		        t.number, t.subtotal, t.discount, t.promo_discount, t.tax_percent, t.tax,
 		        t.service_percent, t.service_charge, t.total, t.status, t.created_at
 		 FROM transactions t
 		 JOIN stores s ON s.id = t.store_id
@@ -287,7 +306,7 @@ func (r *Repository) Get(ctx context.Context, storeID, id string) (*Transaction,
 		Scan(&t.ID, &t.StoreID, &t.StoreName, &t.StoreAddress, &t.StorePhone,
 			&t.CashierID, &t.CashierName, &t.CustomerID, &t.CustomerName, &t.PointsEarned,
 			&t.Number, &t.Subtotal,
-			&t.Discount, &t.TaxPercent, &t.Tax, &t.ServicePercent, &t.ServiceCharge,
+			&t.Discount, &t.PromoDiscount, &t.TaxPercent, &t.Tax, &t.ServicePercent, &t.ServiceCharge,
 			&t.Total, &t.Status, &t.CreatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound

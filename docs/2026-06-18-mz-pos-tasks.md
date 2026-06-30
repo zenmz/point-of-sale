@@ -258,10 +258,20 @@ Legenda: `[BE]` backend Go · `[FE]` frontend React · `[DB]` skema database · 
 > aksi terima/bayar/batal). **Uji live:** PO 20×Rp8rb → stok +20, hutang
 > Rp160rb, bayar → hutang 0, terima/bayar ganda 400, kasir akses 403.
 
-### M3.3 — Promo
-- [ ] `[DB]` Tabel `promotions`
-- [ ] `[BE]` Engine promo (bundling, diskon qty, happy hour)
-- [ ] `[FE]` UI buat/atur promo + terapkan otomatis di checkout
+### M3.3 — Promo ✅
+- [x] `[DB]` Tabel `promotions`
+- [x] `[BE]` Engine promo (bundling, diskon qty, happy hour)
+- [x] `[FE]` UI buat/atur promo + terapkan otomatis di checkout
+
+> Catatan: tabel promotions (tipe nota_percent/product_qty/happy_hour) + kolom
+> promo_discount di transactions (migrasi 000011). Engine `promo.Compute` =
+> fungsi murni (7 unit test): product_qty diskon per-baris (boleh menumpuk antar
+> produk), nota_percent & happy_hour level-nota ambil yang terbesar (tak
+> menumpuk), total dibatasi subtotal. Diterapkan **otomatis & otoritatif di
+> dalam tx checkout** (ambil promo aktif → Compute → kurangi sebelum pajak).
+> `POST /promotions/preview` untuk pratinjau di kasir. CRUD promo admin/owner.
+> FE: halaman Promo + baris "Promo −Rp" di kasir (estimasi; server final).
+> **Uji live:** nota 10%→−3,6rb; beli 3 diskon 50%→−27rb; qty<min→0; kasir 403.
 
 ### M3.4 — Dashboard Analitik
 - [ ] `[BE]` Endpoint agregasi tren, margin, prediksi stok

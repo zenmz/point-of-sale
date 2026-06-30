@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import * as txApi from "../../api/transaction";
+import * as promoApi from "../../api/promo";
 import { ApiError } from "../../api/client";
 import { loadProducts } from "../../offline/catalogCache";
 import { enqueue, newClientId } from "../../offline/txQueue";
@@ -32,6 +33,10 @@ export function KasirPage() {
   const [cart, setCart] = useState<CartLine[]>([]);
   const [member, setMember] = useState<Customer | null>(null);
   const [memberOpen, setMemberOpen] = useState(false);
+  const [promo, setPromo] = useState<{ discount: number; applied: string[] }>({
+    discount: 0,
+    applied: [],
+  });
   const [notaDiscount, setNotaDiscount] = useState(0);
   const [taxPercent, setTaxPercent] = useState(0);
   const [servicePercent, setServicePercent] = useState(0);
@@ -63,6 +68,26 @@ export function KasirPage() {
     () => computeTotals(cart, notaDiscount, taxPercent, servicePercent),
     [cart, notaDiscount, taxPercent, servicePercent],
   );
+
+  // Pratinjau diskon promo otomatis (server otoritatif; di sini sekadar estimasi
+  // tampilan). Hanya saat online — offline promo dihitung server ketika sinkron.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (!online || cart.length === 0) {
+        setPromo({ discount: 0, applied: [] });
+        return;
+      }
+      const items = cart.map((l) => ({ product_id: l.product_id, qty: l.qty }));
+      promoApi
+        .previewPromo(items)
+        .then(setPromo)
+        .catch(() => setPromo({ discount: 0, applied: [] }));
+    }, 250);
+    return () => clearTimeout(t);
+  }, [cart, online]);
+
+  // Bayar = total nota dikurangi estimasi promo (tak kurang dari 0).
+  const payable = Math.max(0, totals.total - promo.discount);
 
   function addToCart(p: Product) {
     if (p.stock <= 0) return;
@@ -365,9 +390,15 @@ export function KasirPage() {
               <dd className="money">{formatRupiah(totals.service)}</dd>
             </div>
           )}
+          {promo.discount > 0 && (
+            <div>
+              <dt>Promo{promo.applied.length > 0 ? ` (${promo.applied.join(", ")})` : ""}</dt>
+              <dd className="money danger">−{formatRupiah(promo.discount)}</dd>
+            </div>
+          )}
           <div className="totals-grand">
             <dt>Total</dt>
-            <dd className="money">{formatRupiah(totals.total)}</dd>
+            <dd className="money">{formatRupiah(payable)}</dd>
           </div>
         </dl>
 
@@ -377,13 +408,13 @@ export function KasirPage() {
           onClick={openPayment}
         >
           <IconPlus size={18} />
-          {`Bayar ${formatRupiah(totals.total)}`}
+          {`Bayar ${formatRupiah(payable)}`}
         </button>
       </section>
 
       {paying && (
         <PaymentModal
-          total={totals.total}
+          total={payable}
           busy={busy}
           error={error}
           onClose={() => setPaying(false)}

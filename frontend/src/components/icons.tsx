@@ -77,6 +77,13 @@ export const IconMenu = (p: IconProps) => (
   </svg>
 );
 
+export const IconTag = (p: IconProps) => (
+  <svg {...base(p)}>
+    <path d="M3 12V4h8l9 9-7 7-9-9Z" />
+    <circle cx="7.5" cy="7.5" r="1.2" />
+  </svg>
+);
+
 export const IconTruck = (p: IconProps) => (
   <svg {...base(p)}>
     <path d="M3 6h11v9H3z" />

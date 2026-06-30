@@ -32,6 +32,7 @@ export interface Transaction {
   number: number;
   subtotal: number;
   discount: number;
+  promo_discount: number;
   tax_percent: number;
   tax: number;
   service_percent: number;
