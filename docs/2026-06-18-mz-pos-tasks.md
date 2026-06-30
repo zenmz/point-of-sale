@@ -273,9 +273,18 @@ Legenda: `[BE]` backend Go · `[FE]` frontend React · `[DB]` skema database · 
 > FE: halaman Promo + baris "Promo −Rp" di kasir (estimasi; server final).
 > **Uji live:** nota 10%→−3,6rb; beli 3 diskon 50%→−27rb; qty<min→0; kasir 403.
 
-### M3.4 — Dashboard Analitik
-- [ ] `[BE]` Endpoint agregasi tren, margin, prediksi stok
-- [ ] `[FE]` Dashboard grafik (tren penjualan, margin, alert stok)
+### M3.4 — Dashboard Analitik ✅
+- [x] `[BE]` Endpoint agregasi tren, margin, prediksi stok
+- [x] `[FE]` Dashboard grafik (tren penjualan, margin, alert stok)
+
+> Catatan: kolom `products.cost` (harga modal, migrasi 000012) — diisi manual di
+> form produk ATAU otomatis dari harga beli saat penerimaan PO. `GET
+> /analytics/dashboard?days=N` (admin/owner): tren penjualan harian, margin
+> (revenue − Σ cost×qty, %), prediksi stok (kecepatan jual qty/hari → perkiraan
+> hari habis; flag bila stok ≤5 atau habis <7 hari). FE: Ringkasan (home)
+> menampilkan kartu penjualan/laba/margin + grafik bar tren + tabel alert stok.
+> **Uji live:** PO set cost 8rb → margin 55,6% (rev 252rb−cost 112rb), tren
+> harian, kasir 403. ponytail: margin pakai cost terbaru (bukan snapshot per nota).
 
 ### M3.5 — Integrasi Hardware
 - [ ] `[FE]` Integrasi printer thermal (WebUSB/escpos)

@@ -22,6 +22,7 @@ export interface Product {
   sku: string | null;
   barcode: string | null;
   price: number;
+  cost: number;
   is_active: boolean;
   created_at: string;
   variants?: Variant[];
@@ -36,5 +37,6 @@ export interface ProductInput {
   sku: string | null;
   barcode: string | null;
   price: number;
+  cost: number;
   variants: Variant[];
 }

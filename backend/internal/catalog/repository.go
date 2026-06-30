@@ -92,7 +92,7 @@ func (r *Repository) DeleteCategory(ctx context.Context, storeID, id string) err
 // ListProducts mengambil produk aktif per toko, opsional filter pencarian nama/sku/barcode.
 func (r *Repository) ListProducts(ctx context.Context, storeID, search string) ([]Product, error) {
 	rows, err := r.db.Query(ctx,
-		`SELECT p.id, p.store_id, p.category_id, p.name, p.sku, p.barcode, p.price,
+		`SELECT p.id, p.store_id, p.category_id, p.name, p.sku, p.barcode, p.price, p.cost,
 		        p.is_active, p.created_at,
 		        (SELECT count(*) FROM variants v WHERE v.product_id = p.id) AS variant_count,
 		        COALESCE(i.quantity, 0) AS stock
@@ -110,7 +110,7 @@ func (r *Repository) ListProducts(ctx context.Context, storeID, search string) (
 	for rows.Next() {
 		var p Product
 		if err := rows.Scan(&p.ID, &p.StoreID, &p.CategoryID, &p.Name, &p.SKU,
-			&p.Barcode, &p.Price, &p.IsActive, &p.CreatedAt, &p.VariantCount, &p.Stock); err != nil {
+			&p.Barcode, &p.Price, &p.Cost, &p.IsActive, &p.CreatedAt, &p.VariantCount, &p.Stock); err != nil {
 			return nil, err
 		}
 		products = append(products, p)
@@ -122,10 +122,10 @@ func (r *Repository) ListProducts(ctx context.Context, storeID, search string) (
 func (r *Repository) GetProduct(ctx context.Context, storeID, id string) (*Product, error) {
 	p := &Product{}
 	err := r.db.QueryRow(ctx,
-		`SELECT id, store_id, category_id, name, sku, barcode, price, is_active, created_at
+		`SELECT id, store_id, category_id, name, sku, barcode, price, cost, is_active, created_at
 		 FROM products WHERE id = $1 AND store_id = $2`, id, storeID).
 		Scan(&p.ID, &p.StoreID, &p.CategoryID, &p.Name, &p.SKU, &p.Barcode,
-			&p.Price, &p.IsActive, &p.CreatedAt)
+			&p.Price, &p.Cost, &p.IsActive, &p.CreatedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, ErrNotFound
 	}
@@ -164,10 +164,10 @@ func (r *Repository) listVariants(ctx context.Context, productID string) ([]Vari
 // CreateProduct menyisipkan produk; ErrDuplicate bila sku/barcode bentrok.
 func (r *Repository) CreateProduct(ctx context.Context, p *Product) (*Product, error) {
 	err := r.db.QueryRow(ctx,
-		`INSERT INTO products (store_id, category_id, name, sku, barcode, price)
-		 VALUES ($1, $2, $3, $4, $5, $6)
+		`INSERT INTO products (store_id, category_id, name, sku, barcode, price, cost)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7)
 		 RETURNING id, is_active, created_at`,
-		p.StoreID, p.CategoryID, p.Name, p.SKU, p.Barcode, p.Price).
+		p.StoreID, p.CategoryID, p.Name, p.SKU, p.Barcode, p.Price, p.Cost).
 		Scan(&p.ID, &p.IsActive, &p.CreatedAt)
 	if err != nil {
 		if isUniqueViolation(err) {
@@ -182,9 +182,9 @@ func (r *Repository) CreateProduct(ctx context.Context, p *Product) (*Product, e
 func (r *Repository) UpdateProduct(ctx context.Context, p *Product) (*Product, error) {
 	tag, err := r.db.Exec(ctx,
 		`UPDATE products
-		 SET category_id = $1, name = $2, sku = $3, barcode = $4, price = $5, updated_at = now()
-		 WHERE id = $6 AND store_id = $7`,
-		p.CategoryID, p.Name, p.SKU, p.Barcode, p.Price, p.ID, p.StoreID)
+		 SET category_id = $1, name = $2, sku = $3, barcode = $4, price = $5, cost = $6, updated_at = now()
+		 WHERE id = $7 AND store_id = $8`,
+		p.CategoryID, p.Name, p.SKU, p.Barcode, p.Price, p.Cost, p.ID, p.StoreID)
 	if err != nil {
 		if isUniqueViolation(err) {
 			return nil, ErrDuplicate

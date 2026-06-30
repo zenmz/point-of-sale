@@ -191,18 +191,19 @@ func (r *Repository) ReceivePO(ctx context.Context, storeID, poID, userID string
 		return nil, ErrNotOrdered
 	}
 
-	rows, err := tx.Query(ctx, `SELECT product_id, qty FROM po_items WHERE po_id=$1`, poID)
+	rows, err := tx.Query(ctx, `SELECT product_id, qty, cost FROM po_items WHERE po_id=$1`, poID)
 	if err != nil {
 		return nil, err
 	}
 	type recv struct {
 		productID *string
 		qty       int64
+		cost      int64
 	}
 	var recvs []recv
 	for rows.Next() {
 		var rc recv
-		if err := rows.Scan(&rc.productID, &rc.qty); err != nil {
+		if err := rows.Scan(&rc.productID, &rc.qty, &rc.cost); err != nil {
 			rows.Close()
 			return nil, err
 		}
@@ -236,6 +237,13 @@ func (r *Repository) ReceivePO(ctx context.Context, storeID, poID, userID string
 			 VALUES ($1,$2,'masuk',$3,$4,$5,$6)`,
 			storeID, *rc.productID, rc.qty, newQty, poReason(number), uid); err != nil {
 			return nil, err
+		}
+		// Perbarui harga modal produk dengan harga beli terakhir (untuk margin).
+		if rc.cost > 0 {
+			if _, err := tx.Exec(ctx, `UPDATE products SET cost=$2 WHERE id=$1`,
+				*rc.productID, rc.cost); err != nil {
+				return nil, err
+			}
 		}
 	}
 

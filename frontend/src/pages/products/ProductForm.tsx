@@ -15,7 +15,7 @@ interface Props {
 // jadi inisialisasi lewat lazy initializer ini sudah cukup (tanpa useEffect).
 function initialForm(product: Product | null): ProductInput {
   if (!product) {
-    return { category_id: null, name: "", sku: null, barcode: null, price: 0, variants: [] };
+    return { category_id: null, name: "", sku: null, barcode: null, price: 0, cost: 0, variants: [] };
   }
   return {
     category_id: product.category_id,
@@ -23,6 +23,7 @@ function initialForm(product: Product | null): ProductInput {
     sku: product.sku,
     barcode: product.barcode,
     price: product.price,
+    cost: product.cost,
     variants: product.variants ?? [],
   };
 }
@@ -93,7 +94,7 @@ export function ProductForm({ product, categories, onClose, onSaved }: Props) {
 
         <div className="row">
           <label className="field" style={{ flex: 1 }}>
-            Harga (Rp)
+            Harga jual (Rp)
             <input
               className="input"
               type="number"
@@ -101,6 +102,16 @@ export function ProductForm({ product, categories, onClose, onSaved }: Props) {
               value={form.price}
               onChange={(e) => setField("price", Number(e.target.value))}
               required
+            />
+          </label>
+          <label className="field" style={{ flex: 1 }}>
+            Harga modal (Rp)
+            <input
+              className="input"
+              type="number"
+              min={0}
+              value={form.cost}
+              onChange={(e) => setField("cost", Math.max(0, Number(e.target.value)))}
             />
           </label>
           <label className="field" style={{ flex: 1 }}>

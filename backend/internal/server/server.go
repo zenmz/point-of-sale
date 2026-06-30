@@ -7,6 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/mzpos/backend/internal/analytics"
 	"github.com/mzpos/backend/internal/auth"
 	"github.com/mzpos/backend/internal/catalog"
 	"github.com/mzpos/backend/internal/config"
@@ -81,6 +82,7 @@ func (s *Server) registerRoutes() {
 	customer.NewHandler(customer.NewRepository(s.db), tokens).Register(api)
 	purchase.NewHandler(purchase.NewRepository(s.db), tokens).Register(api)
 	promo.NewHandler(promo.NewRepository(s.db), tokens).Register(api)
+	analytics.NewHandler(analytics.NewRepository(s.db), tokens).Register(api)
 }
 
 // errorHandler menyeragamkan format respons error.

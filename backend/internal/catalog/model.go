@@ -26,6 +26,7 @@ type Product struct {
 	SKU        *string   `json:"sku"`
 	Barcode    *string   `json:"barcode"`
 	Price      int64     `json:"price"`
+	Cost       int64     `json:"cost"` // harga modal (untuk margin)
 	IsActive   bool      `json:"is_active"`
 	CreatedAt  time.Time `json:"created_at"`
 	Variants   []Variant `json:"variants,omitempty"`

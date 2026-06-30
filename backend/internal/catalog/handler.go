@@ -120,6 +120,7 @@ type productReq struct {
 	SKU        *string      `json:"sku"`
 	Barcode    *string      `json:"barcode"`
 	Price      int64        `json:"price"`
+	Cost       int64        `json:"cost"`
 	Variants   []variantReq `json:"variants"`
 }
 
@@ -162,6 +163,7 @@ func (h *Handler) createProduct(c *fiber.Ctx) error {
 		SKU:        req.SKU,
 		Barcode:    req.Barcode,
 		Price:      req.Price,
+		Cost:       req.Cost,
 	})
 	if err != nil {
 		return mapErr(err)
@@ -193,6 +195,7 @@ func (h *Handler) updateProduct(c *fiber.Ctx) error {
 		SKU:        req.SKU,
 		Barcode:    req.Barcode,
 		Price:      req.Price,
+		Cost:       req.Cost,
 	})
 	if err != nil {
 		return mapErr(err)
