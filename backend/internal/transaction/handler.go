@@ -23,7 +23,38 @@ func (h *Handler) Register(r fiber.Router) {
 
 	tx := r.Group("/transactions", authed)
 	tx.Post("/", h.create)
+	tx.Post("/quote", h.quote)
 	tx.Get("/:id", h.get)
+}
+
+type quoteReq struct {
+	Items          []ItemInput `json:"items"`
+	Discount       int64       `json:"discount"`
+	TaxPercent     float64     `json:"tax_percent"`
+	ServicePercent float64     `json:"service_percent"`
+}
+
+// quote mengembalikan rincian total nota otoritatif (sama dgn checkout) tanpa
+// menyimpan — dipakai kasir agar jumlah bayar persis sama dengan server.
+func (h *Handler) quote(c *fiber.Ctx) error {
+	var req quoteReq
+	if err := c.BodyParser(&req); err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "body tidak valid")
+	}
+	if len(req.Items) == 0 {
+		return fiber.NewError(fiber.StatusBadRequest, "keranjang kosong")
+	}
+	t, err := h.repo.Quote(c.Context(), QuoteInput{
+		StoreID:        auth.StoreID(c),
+		Items:          req.Items,
+		Discount:       req.Discount,
+		TaxPercent:     req.TaxPercent,
+		ServicePercent: req.ServicePercent,
+	})
+	if err != nil {
+		return mapErr(err)
+	}
+	return c.JSON(t)
 }
 
 type checkoutReq struct {
@@ -77,7 +108,8 @@ func mapErr(err error) error {
 	switch {
 	case errors.As(err, &insufficient):
 		return fiber.NewError(fiber.StatusConflict, err.Error())
-	case errors.Is(err, ErrEmpty), errors.Is(err, ErrInvalidMethod), errors.Is(err, ErrPaymentShort):
+	case errors.Is(err, ErrEmpty), errors.Is(err, ErrInvalidMethod),
+		errors.Is(err, ErrPaymentShort), errors.Is(err, ErrInvalidQty):
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	case errors.Is(err, ErrProductNotFound), errors.Is(err, ErrNotFound),
 		errors.Is(err, ErrCustomerNotFound):

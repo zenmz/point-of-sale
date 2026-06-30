@@ -16,6 +16,8 @@ var (
 	ErrEmpty            = errors.New("PO tidak punya item")
 	ErrNotOrdered       = errors.New("PO bukan berstatus dipesan")
 	ErrAlreadyPaid      = errors.New("PO sudah lunas")
+	ErrNotReceived      = errors.New("PO belum diterima")
+	ErrInvalidItem      = errors.New("qty/harga beli tidak valid")
 )
 
 type Repository struct {
@@ -113,7 +115,7 @@ func (r *Repository) CreatePO(ctx context.Context, in CreateInput) (*PO, error) 
 	var total int64
 	for _, it := range in.Items {
 		if it.Qty <= 0 || it.Cost < 0 {
-			return nil, errors.New("qty/harga beli tidak valid")
+			return nil, ErrInvalidItem
 		}
 		var name string
 		err := tx.QueryRow(ctx,
@@ -257,19 +259,22 @@ func (r *Repository) ReceivePO(ctx context.Context, storeID, poID, userID string
 	return r.GetPO(ctx, storeID, poID)
 }
 
-// PayPO menandai PO lunas (hutang dibayar).
+// PayPO menandai PO lunas. Hanya boleh untuk PO yang SUDAH diterima & belum
+// lunas (cegah bayar barang yang belum datang).
 func (r *Repository) PayPO(ctx context.Context, storeID, poID string) (*PO, error) {
 	ct, err := r.db.Exec(ctx,
-		`UPDATE purchase_orders SET is_paid=TRUE WHERE id=$1 AND store_id=$2 AND is_paid=FALSE`,
+		`UPDATE purchase_orders SET is_paid=TRUE
+		 WHERE id=$1 AND store_id=$2 AND status='diterima' AND is_paid=FALSE`,
 		poID, storeID)
 	if err != nil {
 		return nil, err
 	}
 	if ct.RowsAffected() == 0 {
-		// Bedakan tidak ada vs sudah lunas.
+		// Bedakan: tidak ada / belum diterima / sudah lunas.
+		var status string
 		var paid bool
-		e := r.db.QueryRow(ctx, `SELECT is_paid FROM purchase_orders WHERE id=$1 AND store_id=$2`,
-			poID, storeID).Scan(&paid)
+		e := r.db.QueryRow(ctx, `SELECT status, is_paid FROM purchase_orders WHERE id=$1 AND store_id=$2`,
+			poID, storeID).Scan(&status, &paid)
 		if errors.Is(e, pgx.ErrNoRows) {
 			return nil, ErrPONotFound
 		}
@@ -279,6 +284,7 @@ func (r *Repository) PayPO(ctx context.Context, storeID, poID string) (*PO, erro
 		if paid {
 			return nil, ErrAlreadyPaid
 		}
+		return nil, ErrNotReceived
 	}
 	return r.GetPO(ctx, storeID, poID)
 }

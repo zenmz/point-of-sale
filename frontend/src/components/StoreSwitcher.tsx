@@ -40,9 +40,12 @@ export function StoreSwitcher() {
     }
     setBusy(true);
     try {
-      await switchStore(id); // memuat ulang halaman
-    } finally {
+      await switchStore(id); // memuat ulang halaman bila sukses
+    } catch (err) {
+      // Switch gagal (mis. toko nonaktif/hilang) → beri tahu, jangan diam.
+      alert(err instanceof Error ? `Gagal pindah cabang: ${err.message}` : "Gagal pindah cabang");
       setBusy(false);
+      setOpen(false);
     }
   }
 

@@ -95,6 +95,15 @@ type CreateInput struct {
 	ClientID       string // UUID idempotensi (transaksi offline); kosong = online biasa
 }
 
+// QuoteInput = payload pratinjau total nota (tanpa pembayaran/member/stok).
+type QuoteInput struct {
+	StoreID        string
+	Items          []ItemInput
+	Discount       int64
+	TaxPercent     float64
+	ServicePercent float64
+}
+
 // PointsPerRupiah: 1 poin tiap Rp1.000 belanja (dari total nota).
 // ponytail: rasio tetap; jadikan konfigurasi per-toko bila bisnis memintanya.
 const RupiahPerPoint = 1000

@@ -30,6 +30,8 @@ function cashSuggestions(total: number): number[] {
 
 export function PaymentModal({ total, busy, error, onClose, onConfirm }: Props) {
   const [method, setMethod] = useState<PaymentMethod>("tunai");
+  // `cash` di-init dari total; bila total berubah, parent me-remount lewat `key`
+  // sehingga nilai ini tersegarkan tanpa efek setState.
   const [cash, setCash] = useState(total);
 
   const suggestions = useMemo(() => cashSuggestions(total), [total]);

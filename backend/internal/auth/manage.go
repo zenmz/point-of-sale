@@ -204,6 +204,10 @@ func (h *Handler) createManagedUser(c *fiber.Ctx) error {
 	if err := authorizeTarget(Role(c), StoreID(c), req.StoreID, req.Role); err != nil {
 		return err
 	}
+	// Pastikan toko tujuan ada (owner bisa kirim store_id apa saja) → 404, bukan 500.
+	if _, err := h.repo.GetStore(c.Context(), req.StoreID); err != nil {
+		return mapManageErr(err)
+	}
 
 	hash, err := HashPassword(req.Password)
 	if err != nil {

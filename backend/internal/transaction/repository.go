@@ -21,7 +21,39 @@ var (
 	ErrInvalidMethod    = errors.New("metode pembayaran tidak valid")
 	ErrPaymentShort     = errors.New("pembayaran kurang dari total")
 	ErrCustomerNotFound = errors.New("member tidak ditemukan")
+	ErrInvalidQty       = errors.New("qty harus lebih dari nol")
 )
+
+// Totals = rincian perhitungan nota (dipakai bersama oleh checkout & quote).
+type Totals struct {
+	Subtotal       int64   `json:"subtotal"`
+	Discount       int64   `json:"discount"`       // diskon nota (setelah clamp)
+	PromoDiscount  int64   `json:"promo_discount"` // diskon promo otomatis
+	TaxPercent     float64 `json:"tax_percent"`
+	Tax            int64   `json:"tax"`
+	ServicePercent float64 `json:"service_percent"`
+	Service        int64   `json:"service_charge"`
+	Total          int64   `json:"total"`
+}
+
+// finalize menghitung diskon nota, promo, pajak, service, dan total dari
+// subtotal (jumlah line total sesudah diskon item). Urutan: diskon nota →
+// promo → pajak/service atas sisa. Semua langkah dijaga tak negatif. Dipakai
+// oleh Create (checkout) maupun Quote (pratinjau) agar hasilnya identik.
+func finalize(subtotal, notaDiscIn int64, taxPctIn, svcPctIn float64, promoDisc int64) Totals {
+	notaDisc := min(clampNonNeg(notaDiscIn), subtotal)
+	promoDisc = min(clampNonNeg(promoDisc), subtotal-notaDisc)
+	afterDisc := subtotal - notaDisc - promoDisc
+	taxPct := clampPercent(taxPctIn)
+	svcPct := clampPercent(svcPctIn)
+	tax := int64(math.Round(float64(afterDisc) * taxPct / 100))
+	svc := int64(math.Round(float64(afterDisc) * svcPct / 100))
+	return Totals{
+		Subtotal: subtotal, Discount: notaDisc, PromoDiscount: promoDisc,
+		TaxPercent: taxPct, Tax: tax, ServicePercent: svcPct, Service: svc,
+		Total: afterDisc + tax + svc,
+	}
+}
 
 // InsufficientStockError menandai stok kurang untuk satu produk.
 type InsufficientStockError struct {
@@ -105,7 +137,7 @@ func (r *Repository) Create(ctx context.Context, in CreateInput) (*Transaction, 
 	var subtotal int64
 	for _, it := range in.Items {
 		if it.Qty <= 0 {
-			return nil, fmt.Errorf("qty harus lebih dari nol")
+			return nil, ErrInvalidQty
 		}
 
 		// Snapshot produk (harus aktif & milik toko).
@@ -160,21 +192,14 @@ func (r *Repository) Create(ctx context.Context, in CreateInput) (*Transaction, 
 	}
 	promoDisc := promo.Compute(promoLines, subtotal, time.Now().Hour(), promos).Discount
 
-	// Diskon nota & pajak/service dihitung dari subtotal setelah diskon item & promo.
-	notaDisc := min(clampNonNeg(in.Discount), subtotal)
-	promoDisc = min(promoDisc, subtotal-notaDisc) // jangan melebihi sisa
-	afterDisc := subtotal - notaDisc - promoDisc
-	taxPct := clampPercent(in.TaxPercent)
-	svcPct := clampPercent(in.ServicePercent)
-	tax := int64(math.Round(float64(afterDisc) * taxPct / 100))
-	service := int64(math.Round(float64(afterDisc) * svcPct / 100))
-	total := afterDisc + tax + service
+	// Diskon nota, promo, pajak/service, total — lewat helper bersama.
+	ft := finalize(subtotal, in.Discount, in.TaxPercent, in.ServicePercent, promoDisc)
 
 	// Pembayaran wajib menutup total. Kembalian hanya relevan untuk tunai.
-	if in.PaidAmount < total {
+	if in.PaidAmount < ft.Total {
 		return nil, ErrPaymentShort
 	}
-	change := in.PaidAmount - total
+	change := in.PaidAmount - ft.Total
 
 	// Nomor nota berikutnya (aman di bawah advisory lock).
 	var number int64
@@ -209,7 +234,7 @@ func (r *Repository) Create(ctx context.Context, in CreateInput) (*Transaction, 
 		}
 		cid := in.CustomerID
 		customerID = &cid
-		pointsEarned = total / RupiahPerPoint
+		pointsEarned = ft.Total / RupiahPerPoint
 	}
 
 	var txID string
@@ -220,7 +245,8 @@ func (r *Repository) Create(ctx context.Context, in CreateInput) (*Transaction, 
 		 VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
 		 RETURNING id`,
 		in.StoreID, cashierID, customerID, pointsEarned, clientID, number, subtotal,
-		notaDisc, promoDisc, taxPct, tax, svcPct, service, total, StatusSelesai).Scan(&txID)
+		ft.Discount, ft.PromoDiscount, ft.TaxPercent, ft.Tax, ft.ServicePercent, ft.Service,
+		ft.Total, StatusSelesai).Scan(&txID)
 	if err != nil {
 		// Balapan sync: client_id sudah ada → kembalikan yang tersimpan.
 		if in.ClientID != "" && isUniqueViolation(err) {
@@ -288,6 +314,42 @@ func (r *Repository) Create(ctx context.Context, in CreateInput) (*Transaction, 
 		return nil, err
 	}
 	return r.Get(ctx, in.StoreID, txID)
+}
+
+// Quote menghitung rincian nota (subtotal, diskon, promo, pajak, total) TANPA
+// menyimpan apa pun. Memakai harga & promo aktif yang sama dengan checkout,
+// lewat helper finalize yang sama, sehingga total pratinjau == total checkout.
+// Tidak memvalidasi stok (sekadar estimasi harga untuk kasir).
+func (r *Repository) Quote(ctx context.Context, in QuoteInput) (*Totals, error) {
+	var subtotal int64
+	lines := make([]promo.Line, 0, len(in.Items))
+	for _, it := range in.Items {
+		if it.Qty <= 0 {
+			return nil, ErrInvalidQty
+		}
+		var price int64
+		err := r.db.QueryRow(ctx,
+			`SELECT price FROM products WHERE id = $1 AND store_id = $2 AND is_active = TRUE`,
+			it.ProductID, in.StoreID).Scan(&price)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrProductNotFound
+		}
+		if err != nil {
+			return nil, err
+		}
+		lineSubtotal := price * it.Qty
+		disc := min(clampNonNeg(it.Discount), lineSubtotal)
+		lineTotal := lineSubtotal - disc
+		subtotal += lineTotal
+		lines = append(lines, promo.Line{ProductID: it.ProductID, Qty: it.Qty, LineTotal: lineTotal})
+	}
+	promos, err := promo.QueryActive(ctx, r.db, in.StoreID)
+	if err != nil {
+		return nil, err
+	}
+	promoDisc := promo.Compute(lines, subtotal, time.Now().Hour(), promos).Discount
+	ft := finalize(subtotal, in.Discount, in.TaxPercent, in.ServicePercent, promoDisc)
+	return &ft, nil
 }
 
 // Get mengambil satu transaksi lengkap dengan item & nama kasir.

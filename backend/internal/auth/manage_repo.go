@@ -129,7 +129,7 @@ func (r *Repository) CopyCatalog(ctx context.Context, fromStore, toStore string)
 
 	// Produk + varian.
 	prows, err := tx.Query(ctx,
-		`SELECT id, category_id, name, sku, barcode, price FROM products
+		`SELECT id, category_id, name, sku, barcode, price, cost FROM products
 		 WHERE store_id = $1 AND is_active = TRUE`, fromStore)
 	if err != nil {
 		return err
@@ -139,11 +139,12 @@ func (r *Repository) CopyCatalog(ctx context.Context, fromStore, toStore string)
 		categoryID   *string
 		sku, barcode *string
 		price        int64
+		cost         int64
 	}
 	var prods []prod
 	for prows.Next() {
 		var p prod
-		if err := prows.Scan(&p.id, &p.categoryID, &p.name, &p.sku, &p.barcode, &p.price); err != nil {
+		if err := prows.Scan(&p.id, &p.categoryID, &p.name, &p.sku, &p.barcode, &p.price, &p.cost); err != nil {
 			prows.Close()
 			return err
 		}
@@ -163,9 +164,9 @@ func (r *Repository) CopyCatalog(ctx context.Context, fromStore, toStore string)
 		}
 		var newID string
 		if err := tx.QueryRow(ctx,
-			`INSERT INTO products (store_id, category_id, name, sku, barcode, price)
-			 VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-			toStore, newCat, p.name, p.sku, p.barcode, p.price,
+			`INSERT INTO products (store_id, category_id, name, sku, barcode, price, cost)
+			 VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
+			toStore, newCat, p.name, p.sku, p.barcode, p.price, p.cost,
 		).Scan(&newID); err != nil {
 			return err
 		}

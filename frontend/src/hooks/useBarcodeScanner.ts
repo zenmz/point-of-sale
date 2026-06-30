@@ -20,6 +20,17 @@ export function useBarcodeScanner(onScan: (code: string) => void) {
     let last = 0;
 
     function onKey(e: KeyboardEvent) {
+      // Abaikan saat fokus di elemen input/teks (form, kolom bayar, cari member):
+      // cegah scan/Enter mengganggu ketikan & submit form. Scanner dipakai saat
+      // tak ada field fokus (area produk).
+      const tgt = e.target as HTMLElement | null;
+      if (
+        tgt &&
+        (tgt.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(tgt.tagName))
+      ) {
+        return;
+      }
+
       const now = performance.now();
       if (now - last > GAP_MS) buffer = ""; // jeda → mulai buffer baru
       last = now;

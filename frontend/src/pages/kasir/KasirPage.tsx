@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import * as txApi from "../../api/transaction";
-import * as promoApi from "../../api/promo";
+import type { QuoteResult } from "../../api/transaction";
 import { ApiError } from "../../api/client";
 import { loadProducts } from "../../offline/catalogCache";
 import { enqueue, newClientId } from "../../offline/txQueue";
@@ -36,10 +36,8 @@ export function KasirPage() {
   const [cart, setCart] = useState<CartLine[]>([]);
   const [member, setMember] = useState<Customer | null>(null);
   const [memberOpen, setMemberOpen] = useState(false);
-  const [promo, setPromo] = useState<{ discount: number; applied: string[] }>({
-    discount: 0,
-    applied: [],
-  });
+  // Quote otoritatif dari server (online). null = pakai perhitungan lokal (offline).
+  const [quote, setQuote] = useState<QuoteResult | null>(null);
   const [notaDiscount, setNotaDiscount] = useState(0);
   const [taxPercent, setTaxPercent] = useState(0);
   const [servicePercent, setServicePercent] = useState(0);
@@ -93,25 +91,38 @@ export function KasirPage() {
     [cart, notaDiscount, taxPercent, servicePercent],
   );
 
-  // Pratinjau diskon promo otomatis (server otoritatif; di sini sekadar estimasi
-  // tampilan). Hanya saat online — offline promo dihitung server ketika sinkron.
+  // Quote otoritatif dari server: total persis sama dengan checkout (promo +
+  // diskon item/nota + pajak, urutan benar). Online saja; offline pakai hitung
+  // lokal (tanpa promo) — total lokal ≥ total server, jadi bayar tak akan kurang.
   useEffect(() => {
     const t = setTimeout(() => {
       if (!online || cart.length === 0) {
-        setPromo({ discount: 0, applied: [] });
+        setQuote(null);
         return;
       }
-      const items = cart.map((l) => ({ product_id: l.product_id, qty: l.qty }));
-      promoApi
-        .previewPromo(items)
-        .then(setPromo)
-        .catch(() => setPromo({ discount: 0, applied: [] }));
-    }, 250);
+      txApi
+        .quote({
+          items: cart.map((l) => ({ product_id: l.product_id, qty: l.qty, discount: l.discount })),
+          discount: notaDiscount,
+          tax_percent: taxPercent,
+          service_percent: servicePercent,
+        })
+        .then(setQuote)
+        .catch(() => setQuote(null));
+    }, 200);
     return () => clearTimeout(t);
-  }, [cart, online]);
+  }, [cart, notaDiscount, taxPercent, servicePercent, online]);
 
-  // Bayar = total nota dikurangi estimasi promo (tak kurang dari 0).
-  const payable = Math.max(0, totals.total - promo.discount);
+  // Rincian yang ditampilkan: quote server bila ada, jika tidak hitung lokal.
+  const disp = quote ?? {
+    subtotal: totals.subtotal,
+    discount: totals.discount,
+    promo_discount: 0,
+    tax: totals.tax,
+    service_charge: totals.service,
+    total: totals.total,
+  };
+  const payable = disp.total;
 
   // Siarkan keranjang ke layar pelanggan (jendela /display).
   useEffect(() => {
@@ -420,30 +431,30 @@ export function KasirPage() {
         <dl className="totals">
           <div>
             <dt>Subtotal</dt>
-            <dd className="money">{formatRupiah(totals.subtotal)}</dd>
+            <dd className="money">{formatRupiah(disp.subtotal)}</dd>
           </div>
-          {totals.discount > 0 && (
+          {disp.discount > 0 && (
             <div>
               <dt>Diskon nota</dt>
-              <dd className="money danger">−{formatRupiah(totals.discount)}</dd>
+              <dd className="money danger">−{formatRupiah(disp.discount)}</dd>
             </div>
           )}
-          {totals.tax > 0 && (
+          {disp.promo_discount > 0 && (
+            <div>
+              <dt>Promo</dt>
+              <dd className="money danger">−{formatRupiah(disp.promo_discount)}</dd>
+            </div>
+          )}
+          {disp.tax > 0 && (
             <div>
               <dt>Pajak ({taxPercent}%)</dt>
-              <dd className="money">{formatRupiah(totals.tax)}</dd>
+              <dd className="money">{formatRupiah(disp.tax)}</dd>
             </div>
           )}
-          {totals.service > 0 && (
+          {disp.service_charge > 0 && (
             <div>
               <dt>Service ({servicePercent}%)</dt>
-              <dd className="money">{formatRupiah(totals.service)}</dd>
-            </div>
-          )}
-          {promo.discount > 0 && (
-            <div>
-              <dt>Promo{promo.applied.length > 0 ? ` (${promo.applied.join(", ")})` : ""}</dt>
-              <dd className="money danger">−{formatRupiah(promo.discount)}</dd>
+              <dd className="money">{formatRupiah(disp.service_charge)}</dd>
             </div>
           )}
           <div className="totals-grand">
@@ -464,6 +475,7 @@ export function KasirPage() {
 
       {paying && (
         <PaymentModal
+          key={payable}
           total={payable}
           busy={busy}
           error={error}

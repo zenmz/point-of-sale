@@ -12,6 +12,7 @@ var (
 	ErrDestProductNotFound = errors.New("produk padanan tidak ada di cabang tujuan")
 	ErrStoreNotFound       = errors.New("cabang tujuan tidak ditemukan")
 	ErrSameStore           = errors.New("cabang tujuan harus berbeda dari sumber")
+	ErrNegativePhysical    = errors.New("jumlah fisik tidak boleh negatif")
 )
 
 // Transfer = catatan transfer stok antar cabang (dengan nama untuk tampilan).
@@ -95,13 +96,14 @@ func (r *Repository) TransferStock(ctx context.Context, fromStore, toStore, prod
 		return nil, err
 	}
 
-	// Cari produk padanan di tujuan: prioritas SKU sama, fallback nama sama.
+	// Cari produk padanan di tujuan: SKU sama dulu, lalu nama sama (apa pun SKU
+	// sumber). Tiebreak deterministik: cocok-SKU dulu, lalu produk terlama.
 	var toProductID string
 	err = tx.QueryRow(ctx,
 		`SELECT id FROM products
 		 WHERE store_id = $1 AND is_active = TRUE
-		   AND (($2::text IS NOT NULL AND sku = $2) OR (($2::text IS NULL) AND name = $3))
-		 ORDER BY (sku = $2) DESC NULLS LAST
+		   AND ((sku IS NOT NULL AND sku = $2) OR name = $3)
+		 ORDER BY (sku IS NOT DISTINCT FROM $2) DESC, created_at
 		 LIMIT 1`,
 		toStore, sku, name).Scan(&toProductID)
 	if errors.Is(err, pgx.ErrNoRows) {
@@ -126,14 +128,9 @@ func (r *Repository) TransferStock(ctx context.Context, fromStore, toStore, prod
 		return nil, err
 	}
 
-	// Tambah stok tujuan (kunci baris; 0 bila belum ada).
-	var toQty int64
-	err = tx.QueryRow(ctx,
-		`SELECT quantity FROM inventory WHERE product_id = $1 FOR UPDATE`, toProductID).Scan(&toQty)
-	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
-		return nil, err
-	}
-	if err := applyDelta(ctx, tx, toStore, toProductID, userID, Masuk, qty, toQty+qty,
+	// Tambah stok tujuan secara relatif (atomik; aman walau baris belum ada &
+	// terhadap transfer paralel — tak ada lost-update seperti set absolut).
+	if err := addStock(ctx, tx, toStore, toProductID, userID, qty,
 		ptr("transfer dari cabang sumber")); err != nil {
 		return nil, err
 	}
@@ -157,6 +154,26 @@ func (r *Repository) TransferStock(ctx context.Context, fromStore, toStore, prod
 		return nil, err
 	}
 	return t, nil
+}
+
+// addStock menambah stok secara relatif (atomik) lalu mencatat movement 'masuk'.
+// Tahan terhadap baris belum ada & penambahan paralel (tanpa lost-update).
+func addStock(ctx context.Context, tx pgx.Tx, storeID, productID, userID string, qty int64, reason *string) error {
+	var newQty int64
+	if err := tx.QueryRow(ctx,
+		`INSERT INTO inventory (product_id, store_id, quantity, updated_at)
+		 VALUES ($1, $2, $3, now())
+		 ON CONFLICT (product_id)
+		 DO UPDATE SET quantity = inventory.quantity + EXCLUDED.quantity, updated_at = now()
+		 RETURNING quantity`,
+		productID, storeID, qty).Scan(&newQty); err != nil {
+		return err
+	}
+	_, err := tx.Exec(ctx,
+		`INSERT INTO stock_movements (store_id, product_id, type, delta, qty_after, reason, user_id)
+		 VALUES ($1, $2, 'masuk', $3, $4, $5, $6)`,
+		storeID, productID, qty, newQty, reason, nullify(userID))
+	return err
 }
 
 // applyDelta meng-upsert stok ke nilai baru lalu mencatat satu stock_movement.
@@ -206,7 +223,7 @@ func (r *Repository) Opname(ctx context.Context, storeID, userID string, items [
 	results := make([]OpnameResult, 0, len(items))
 	for _, it := range items {
 		if it.Physical < 0 {
-			return nil, errors.New("jumlah fisik tidak boleh negatif")
+			return nil, ErrNegativePhysical
 		}
 		var name string
 		err := tx.QueryRow(ctx,

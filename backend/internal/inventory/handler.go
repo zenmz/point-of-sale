@@ -156,7 +156,7 @@ func mapErr(err error) error {
 		return fiber.NewError(fiber.StatusNotFound, err.Error())
 	case errors.Is(err, ErrInsufficient):
 		return fiber.NewError(fiber.StatusConflict, err.Error())
-	case errors.Is(err, ErrSameStore):
+	case errors.Is(err, ErrSameStore), errors.Is(err, ErrNegativePhysical):
 		return fiber.NewError(fiber.StatusBadRequest, err.Error())
 	default:
 		return err
