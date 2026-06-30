@@ -9,6 +9,19 @@ tahan offline untuk transaksi. Pasar: Indonesia (QRIS, e-wallet, transfer).
 - **Backend:** Go + Fiber, PostgreSQL
 - **Auth:** JWT, RBAC
 
+## Fitur
+
+- **Kasir & checkout** — keranjang, diskon item/nota, pajak/service, pembayaran
+  (tunai/QRIS/e-wallet/transfer), struk thermal 58/80mm.
+- **Offline penuh** — transaksi tetap jalan tanpa koneksi, antri lokal, auto-sync
+  idempoten (client_id) + retry backoff saat online kembali.
+- **Multi-toko** — owner pindah cabang, kelola cabang & pengguna lintas cabang,
+  salin katalog, transfer stok antar cabang, opname, laporan gabungan.
+- **CRM** — member + poin loyalitas. **Promo** otomatis (diskon nota/qty/happy
+  hour). **Pembelian/PO** + hutang. **Analitik** (tren, margin, prediksi stok).
+- **Hardware** — printer thermal & cash drawer (WebUSB/ESC-POS), barcode scanner
+  (keyboard-wedge), layar pelanggan.
+
 ## Struktur
 
 ```
@@ -50,5 +63,6 @@ JWT_SECRET=ganti-rahasia docker compose -f docker-compose.prod.yml up -d --build
 - `frontend` (nginx) menyajikan PWA & mem-proxy `/api` ke backend (satu origin).
 - Atur `JWT_SECRET` dan `DB_PASSWORD` lewat environment di server.
 
-PWA installable (manifest + service worker `frontend/public/sw.js`); sinkronisasi
-data offline penuh menyusul di Fase 2.
+PWA installable (manifest + service worker `frontend/public/sw.js`) dengan
+sinkronisasi transaksi offline penuh (Fase 2). Status pengerjaan per milestone:
+[Task Breakdown](./docs/2026-06-18-mz-pos-tasks.md).

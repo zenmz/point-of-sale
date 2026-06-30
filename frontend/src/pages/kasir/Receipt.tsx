@@ -76,6 +76,12 @@ export function Receipt({ tx, width = 80 }: { tx: Transaction; width?: 58 | 80 }
           <span>−{formatRupiah(tx.discount)}</span>
         </div>
       )}
+      {tx.promo_discount > 0 && (
+        <div className="r-row">
+          <span>Promo</span>
+          <span>−{formatRupiah(tx.promo_discount)}</span>
+        </div>
+      )}
       {tx.tax > 0 && (
         <div className="r-row">
           <span>Pajak ({tx.tax_percent}%)</span>
@@ -104,6 +110,22 @@ export function Receipt({ tx, width = 80 }: { tx: Transaction; width?: 58 | 80 }
             <div className="r-row">
               <span>Kembalian</span>
               <span>{formatRupiah(tx.payment.change)}</span>
+            </div>
+          )}
+        </>
+      )}
+
+      {tx.customer_name && (
+        <>
+          <div className="r-rule" />
+          <div className="r-row">
+            <span>Member</span>
+            <span>{tx.customer_name}</span>
+          </div>
+          {tx.points_earned > 0 && (
+            <div className="r-row">
+              <span>Poin didapat</span>
+              <span>+{tx.points_earned}</span>
             </div>
           )}
         </>

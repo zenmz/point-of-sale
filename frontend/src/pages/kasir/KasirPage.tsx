@@ -45,9 +45,11 @@ export function KasirPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState<Transaction | null>(null);
-  const [offlineSale, setOfflineSale] = useState<{ total: number; method: PaymentMethod } | null>(
-    null,
-  );
+  const [offlineSale, setOfflineSale] = useState<{
+    total: number;
+    method: PaymentMethod;
+    member: string | null;
+  } | null>(null);
   const [paying, setPaying] = useState(false);
   const [printerReady, setPrinterReady] = useState(false);
   const printer = useRef(new ThermalPrinter());
@@ -215,8 +217,9 @@ export function KasirPage() {
       await enqueue(payload, totals.total);
       await refreshSync();
       void syncNow(); // coba kirim segera bila ternyata masih online
+      const memberName = member?.name ?? null;
       finishSale();
-      setOfflineSale({ total: totals.total, method });
+      setOfflineSale({ total: totals.total, method, member: memberName });
     } catch {
       setError("Gagal menyimpan transaksi offline");
       setBusy(false);
@@ -502,7 +505,7 @@ function OfflineSuccess({
   pending,
   onNew,
 }: {
-  sale: { total: number; method: PaymentMethod };
+  sale: { total: number; method: PaymentMethod; member: string | null };
   pending: number;
   onNew: () => void;
 }) {
@@ -522,6 +525,12 @@ function OfflineSuccess({
             <dt>Metode</dt>
             <dd>{METHOD_LABEL[sale.method]}</dd>
           </div>
+          {sale.member && (
+            <div>
+              <dt>Member</dt>
+              <dd>{sale.member}</dd>
+            </div>
+          )}
           <div>
             <dt>Menunggu sinkron</dt>
             <dd>{pending}</dd>
