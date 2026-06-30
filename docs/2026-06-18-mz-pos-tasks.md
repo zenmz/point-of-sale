@@ -243,10 +243,20 @@ Legenda: `[BE]` backend Go · `[FE]` frontend React · `[DB]` skema database · 
 > layar sukses, halaman Pelanggan (list + rincian + redeem). **Uji live:**
 > belanja Rp54rb → +54 poin, redeem 5 → saldo 49, over-redeem 409, member palsu 404.
 
-### M3.2 — Supplier & Purchase Order
-- [ ] `[DB]` Tabel `suppliers`, `purchase_orders`, `po_items`
-- [ ] `[BE]` Buat PO, terima barang (tambah stok), catat hutang
-- [ ] `[FE]` UI supplier + PO + penerimaan barang
+### M3.2 — Supplier & Purchase Order ✅
+- [x] `[DB]` Tabel `suppliers`, `purchase_orders`, `po_items`
+- [x] `[BE]` Buat PO, terima barang (tambah stok), catat hutang
+- [x] `[FE]` UI supplier + PO + penerimaan barang
+
+> Catatan: tabel suppliers + purchase_orders (status dipesan/diterima/batal,
+> is_paid) + po_items (migrasi 000010). PO (admin/owner): buat (`POST
+> /purchase-orders`, nomor per toko, snapshot nama+subtotal), terima
+> (`/receive` → stok +qty tiap item + movement 'masuk', status diterima), bayar
+> (`/pay` → is_paid), batal (`/cancel`, hanya saat dipesan). Hutang =
+> Σ total PO diterima & belum lunas (`GET /purchase-orders/debt`). FE: halaman
+> Pembelian (tab Pesanan/Pemasok, banner hutang, form PO multi-item, rincian +
+> aksi terima/bayar/batal). **Uji live:** PO 20×Rp8rb → stok +20, hutang
+> Rp160rb, bayar → hutang 0, terima/bayar ganda 400, kasir akses 403.
 
 ### M3.3 — Promo
 - [ ] `[DB]` Tabel `promotions`

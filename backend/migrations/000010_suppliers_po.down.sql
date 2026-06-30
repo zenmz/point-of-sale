@@ -1,0 +1,4 @@
+DROP TABLE IF EXISTS po_items;
+DROP TABLE IF EXISTS purchase_orders;
+DROP TYPE IF EXISTS po_status;
+DROP TABLE IF EXISTS suppliers;
