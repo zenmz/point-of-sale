@@ -39,9 +39,9 @@ Legenda: `[BE]` backend Go · `[FE]` frontend React · `[DB]` skema database · 
 - [x] `[FE]` Form tambah/edit produk + kategori + varian
 - [x] `[FE]` Hapus produk (konfirmasi)
 
-> Catatan: UI kategori (CRUD) belum dibuat — kategori dipilih di form produk via
-> dropdown, tapi penambahan kategori baru lewat UI belum ada (endpoint backend
-> siap). Hapus produk = soft-delete. Varian count di list via subquery.
+> Catatan: UI kategori (CRUD) tersedia lewat tombol **Kategori** di halaman
+> Produk (modal tambah/ubah/hapus). Hapus produk = soft-delete; hapus kategori =
+> produk terkait jadi tanpa kategori (ON DELETE SET NULL). Varian count via subquery.
 
 ### M1.2b — Fondasi UI (design system + app shell) ✅
 - [x] `[FE]` Design system "Pasar": token warna (jade/kertas/ink/saffron), 3 font

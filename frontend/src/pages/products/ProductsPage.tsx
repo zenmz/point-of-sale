@@ -5,6 +5,7 @@ import { formatRupiah } from "../../lib/format";
 import { IconPlus } from "../../components/icons";
 import type { Category, Product } from "../../types/catalog";
 import { ProductForm } from "./ProductForm";
+import { CategoryManager } from "./CategoryManager";
 
 export function ProductsPage() {
   const { user } = useAuth();
@@ -16,6 +17,7 @@ export function ProductsPage() {
   const [loading, setLoading] = useState(true);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
+  const [catOpen, setCatOpen] = useState(false);
 
   const load = useCallback(async (q: string) => {
     setLoading(true);
@@ -67,10 +69,15 @@ export function ProductsPage() {
           </p>
         </div>
         {canEdit && (
-          <button onClick={openAdd} className="btn btn-primary">
-            <IconPlus size={18} />
-            Tambah Produk
-          </button>
+          <div className="row" style={{ gap: "0.5rem" }}>
+            <button onClick={() => setCatOpen(true)} className="btn btn-ghost">
+              Kategori
+            </button>
+            <button onClick={openAdd} className="btn btn-primary">
+              <IconPlus size={18} />
+              Tambah Produk
+            </button>
+          </div>
         )}
       </div>
 
@@ -150,6 +157,10 @@ export function ProductsPage() {
             load(search);
           }}
         />
+      )}
+
+      {catOpen && (
+        <CategoryManager onClose={() => setCatOpen(false)} onChanged={() => load(search)} />
       )}
     </div>
   );
